@@ -49,7 +49,7 @@ def create_memory(
         vector_store.add_documents(
             ids=[embedding_id],
             documents=[memory_in.content],
-            metadatas=[{"memory_id": memory.id, "type": "memory", "title": memory_in.title}]
+            metadatas=[{"memory_id": memory.id, "type": "memory", "title": memory_in.title, "user_id": current_user.id}]
         )
         print("Memory added to Vector Store")
     except Exception as e:
@@ -137,7 +137,7 @@ def update_memory(
     vector_store.add_documents(
         ids=[memory.embedding_id],
         documents=[memory.content],
-        metadatas=[{"memory_id": memory.id, "type": "memory", "title": memory.title}]
+        metadatas=[{"memory_id": memory.id, "type": "memory", "title": memory.title, "user_id": current_user.id}]
     )
     
     # Return with prefix

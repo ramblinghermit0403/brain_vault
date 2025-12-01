@@ -60,7 +60,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { VueMonacoEditor } from '@guolao/vue-monaco-editor';
 import MarkdownIt from 'markdown-it';
@@ -78,7 +78,7 @@ const content = ref('');
 const showPreview = ref(true);
 const saving = ref(false);
 const lastSaved = ref(null);
-const documentId = route.params.id;
+const documentId = computed(() => route.params.id);
 
 const editorOptions = computed(() => ({
   automaticLayout: true,
@@ -98,7 +98,7 @@ const handleEditorMount = (editor) => {
 const fetchDocument = async () => {
   try {
     // If creating new document (id='new'), skip fetch
-    if (documentId === 'new') return;
+    if (documentId.value === 'new') return;
 
     // Currently we don't have a direct "get by id" that returns single doc details easily 
     // without filtering the list, but let's assume we can filter the list or add a specific endpoint.
@@ -112,7 +112,7 @@ const fetchDocument = async () => {
     
     // For now, let's assume we can get it from the list.
     const response = await api.get('/documents/');
-    const doc = response.data.find(d => d.id.toString() === documentId);
+    const doc = response.data.find(d => d.id.toString() === documentId.value);
     
     if (doc) {
       title.value = doc.title;
@@ -127,27 +127,46 @@ const fetchDocument = async () => {
 };
 
 const saveDocument = async () => {
-  if (!title.value) return;
+  if (!title.value) {
+    alert('Please enter a title');
+    return;
+  }
   
   saving.value = true;
   try {
-    if (documentId === 'new') {
+    if (documentId.value === 'new') {
       const response = await api.post('/documents/memory', {
         title: title.value,
         content: content.value
       });
+      console.log('Created memory:', response.data);
       // Redirect to edit page of new doc
       router.replace(`/editor/${response.data.document_id}`);
     } else {
-      await api.put(`/documents/${documentId}`, {
+      await api.put(`/documents/${documentId.value}`, {
         title: title.value,
         content: content.value
       });
+      console.log('Updated document:', documentId.value);
     }
     lastSaved.value = new Date().toLocaleTimeString();
   } catch (error) {
     console.error('Error saving document:', error);
-    alert('Failed to save');
+    
+    // If 401, let the interceptor handle the redirect
+    if (error.response && error.response.status === 401) return;
+    
+    let errorMessage = error.message;
+    if (error.response?.data?.detail) {
+      const detail = error.response.data.detail;
+      if (typeof detail === 'object') {
+        errorMessage = JSON.stringify(detail);
+      } else {
+        errorMessage = detail;
+      }
+    }
+    
+    alert('Failed to save: ' + errorMessage);
   } finally {
     saving.value = false;
   }
@@ -166,8 +185,15 @@ let autoSaveInterval;
 onMounted(() => {
   fetchDocument();
   autoSaveInterval = setInterval(() => {
-    if (content.value) saveDocument();
+    // Only auto-save if we have content and a valid ID (not new, not undefined)
+    if (content.value && documentId.value && documentId.value !== 'new') {
+        saveDocument();
+    }
   }, 30000);
+});
+
+onUnmounted(() => {
+  if (autoSaveInterval) clearInterval(autoSaveInterval);
 });
 
 watch(() => themeStore.isDark, (isDark) => {

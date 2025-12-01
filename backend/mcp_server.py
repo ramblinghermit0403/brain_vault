@@ -1,5 +1,6 @@
 import asyncio
 import sys
+import os
 from typing import Any, List, Optional
 from mcp.server.fastmcp import FastMCP
 
@@ -20,6 +21,27 @@ def get_db():
     finally:
         db.close()
 
+def get_current_user(db):
+    """
+    Get the current user based on environment variables or fallback to first user.
+    """
+    # 1. Try env var for email
+    user_email = os.environ.get("BRAIN_VAULT_USER_EMAIL")
+    if user_email:
+        user = db.query(User).filter(User.email == user_email).first()
+        if user:
+            return user
+            
+    # 2. Try env var for ID
+    user_id = os.environ.get("BRAIN_VAULT_USER_ID")
+    if user_id:
+        user = db.query(User).filter(User.id == int(user_id)).first()
+        if user:
+            return user
+            
+    # 3. Fallback to first user (MVP/Single User mode)
+    return db.query(User).first()
+
 @mcp.tool()
 async def search_memory(query: str, top_k: int = 5) -> str:
     """
@@ -28,16 +50,26 @@ async def search_memory(query: str, top_k: int = 5) -> str:
         query: The search query.
         top_k: Number of results to return.
     """
-    results = vector_store.query(query, n_results=top_k)
-    if not results["documents"]:
-        return "No relevant memories found."
-    
-    # Format results
-    formatted_results = []
-    for i, doc in enumerate(results["documents"][0]):
-        formatted_results.append(f"Result {i+1}:\n{doc}")
-    
-    return "\n\n---\n\n".join(formatted_results)
+    db = SessionLocal()
+    try:
+        user = get_current_user(db)
+        if not user:
+            return "Error: No user found."
+            
+        # Filter by user_id
+        results = vector_store.query(query, n_results=top_k, where={"user_id": user.id})
+        
+        if not results["documents"] or not results["documents"][0]:
+            return "No relevant memories found."
+        
+        # Format results
+        formatted_results = []
+        for i, doc in enumerate(results["documents"][0]):
+            formatted_results.append(f"Result {i+1}:\n{doc}")
+        
+        return "\n\n---\n\n".join(formatted_results)
+    finally:
+        db.close()
 
 @mcp.tool()
 async def save_memory(text: str, tags: Optional[List[str]] = None) -> str:
@@ -54,12 +86,7 @@ async def save_memory(text: str, tags: Optional[List[str]] = None) -> str:
     # We need to create a Document record first to get an ID
     db = SessionLocal()
     try:
-        # Create a dummy user for the MCP context if needed, or assume single user MVP
-        # For now, we'll just process the text directly into vector store
-        # But to be consistent with our app, we should create a Document
-        
-        # Fetch the first user for MVP (assuming single user)
-        user = db.query(User).first()
+        user = get_current_user(db)
         if not user:
             return "Error: No user found in database to attach memory to."
 
@@ -74,11 +101,19 @@ async def save_memory(text: str, tags: Optional[List[str]] = None) -> str:
         db.refresh(doc)
         
         # Ingest
-        ingestion_service.process_text(
+        embedding_ids, chunk_texts, metadatas = ingestion_service.process_text(
             text=text,
-            doc_id=doc.id,
+            document_id=doc.id,
+            title="MCP Memory",
             doc_type="memory",
-            metadata={"source": "mcp", "tags": tags or []}
+            metadata={"source": "mcp", "tags": ",".join(tags or []), "user_id": user.id}
+        )
+        
+        # FIX: Actually save to vector store
+        vector_store.add_documents(
+            ids=embedding_ids,
+            documents=chunk_texts,
+            metadatas=metadatas
         )
         
         return f"Memory saved successfully with ID: {doc.id}"
@@ -96,9 +131,18 @@ async def get_document(doc_id: int) -> str:
     """
     db = SessionLocal()
     try:
+        user = get_current_user(db)
+        if not user:
+            return "Error: No user found."
+            
         doc = db.query(Document).filter(Document.id == doc_id).first()
         if not doc:
             return f"Document with ID {doc_id} not found."
+            
+        # Check ownership
+        if doc.user_id != user.id:
+             return f"Document with ID {doc_id} not found (Access Denied)."
+             
         return doc.content
     finally:
         db.close()

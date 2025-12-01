@@ -86,7 +86,8 @@ async def upload_document(
         text=text,
         document_id=document.id,
         title=document.title,
-        doc_type="file"
+        doc_type="file",
+        metadata={"user_id": current_user.id}
     )
     
     # Store Chunks in DB
@@ -193,7 +194,8 @@ def create_memory(
         text=memory.content,
         document_id=document.id,
         title=document.title,
-        doc_type="memory"
+        doc_type="memory",
+        metadata={"user_id": current_user.id}
     )
     
     # Store Chunks in DB
@@ -255,7 +257,8 @@ def update_document(
         text=memory.content,
         document_id=document.id,
         title=document.title,
-        doc_type=document.doc_type
+        doc_type=document.doc_type,
+        metadata={"user_id": current_user.id}
     )
     
     # Store new chunks in DB
@@ -277,5 +280,40 @@ def update_document(
         print(f"Vector Store Error: {e}")
     
     return {"status": "success", "document_id": document.id, "chunks": len(ids)}
+
+
+class SearchRequest(BaseModel):
+    query: str
+    top_k: int = 5
+
+@router.post("/search", response_model=Any)
+def search_documents(
+    request: SearchRequest,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user)
+) -> Any:
+    """
+    Semantic search over documents and memories.
+    """
+    results = vector_store.query(request.query, n_results=request.top_k, where={"user_id": current_user.id})
+    
+    if not results["documents"]:
+        return []
+        
+    # Format results
+    formatted_results = []
+    # results["documents"] is a list of lists (one list per query)
+    # results["metadatas"] is a list of lists
+    
+    docs = results["documents"][0]
+    metas = results["metadatas"][0] if results["metadatas"] else [{}] * len(docs)
+    
+    for doc, meta in zip(docs, metas):
+        formatted_results.append({
+            "content": doc,
+            "metadata": meta
+        })
+        
+    return formatted_results
 
 

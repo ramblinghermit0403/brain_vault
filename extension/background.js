@@ -2,30 +2,60 @@
 
 const API_BASE_URL = 'http://localhost:8000/api/v1';
 
+// Open Side Panel on icon click
+chrome.sidePanel
+    .setPanelBehavior({ openPanelOnActionClick: true })
+    .catch((error) => console.error(error));
+
+chrome.runtime.onInstalled.addListener(() => {
+    console.log('Brain Vault Extension installed');
+});
+
 // Listen for messages from popup or content script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'generatePrompt') {
-        generatePrompt(request.data)
-            .then(response => sendResponse({ success: true, data: response }))
-            .catch(error => sendResponse({ success: false, error: error.message }));
-        return true; // Will respond asynchronously
+        handleRequest(generatePrompt, request.data, sendResponse);
+        return true;
+    }
+    if (request.action === 'saveMemory') {
+        handleRequest(saveMemory, request.data, sendResponse);
+        return true;
+    }
+    if (request.action === 'searchMemory') {
+        handleRequest(searchMemory, request.data, sendResponse);
+        return true;
+    }
+    if (request.action === 'getDocuments') {
+        handleRequest(getDocuments, request.data, sendResponse);
+        return true;
     }
 });
 
-async function generatePrompt(data) {
-    // 1. Get Token from Storage
+async function handleRequest(handler, data, sendResponse) {
+    try {
+        const result = await handler(data);
+        sendResponse({ success: true, data: result });
+    } catch (error) {
+        sendResponse({ success: false, error: error.message });
+    }
+}
+
+async function getAuthHeaders() {
     const { token } = await chrome.storage.local.get('token');
     if (!token) {
         throw new Error('Not authenticated. Please login via the popup.');
     }
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+}
 
-    // 2. Call Backend API
+async function generatePrompt(data) {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/prompts/generate`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
+        headers,
         body: JSON.stringify({
             query: data.query,
             template_id: data.templateId || 'standard',
@@ -36,6 +66,59 @@ async function generatePrompt(data) {
     if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || 'Failed to generate prompt');
+    }
+
+    return await response.json();
+}
+
+async function saveMemory(data) {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/documents/memory`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+            title: data.title,
+            content: data.content
+        })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to save memory');
+    }
+
+    return await response.json();
+}
+
+async function searchMemory(data) {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/documents/search`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+            query: data.query,
+            top_k: 5
+        })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to search memory');
+    }
+
+    return await response.json();
+}
+
+async function getDocuments() {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/documents/`, {
+        method: 'GET',
+        headers
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to fetch documents');
     }
 
     return await response.json();

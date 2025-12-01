@@ -28,7 +28,7 @@ def search_documents(
     Search for relevant document chunks.
     """
     try:
-        results = vector_store.query(request.query, n_results=request.top_k)
+        results = vector_store.query(request.query, n_results=request.top_k, where={"user_id": current_user.id})
         
         # Format results
         formatted_results = []

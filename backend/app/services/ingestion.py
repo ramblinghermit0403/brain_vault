@@ -38,7 +38,8 @@ class IngestionService:
         text: str, 
         document_id: int, 
         title: str, 
-        doc_type: str = "memory"
+        doc_type: str = "memory",
+        metadata: Dict = None
     ) -> tuple[List[str], List[str], List[Dict]]:
         """
         Process text into chunks with metadata for vector store.
@@ -48,6 +49,7 @@ class IngestionService:
             document_id: ID of the parent document
             title: Title of the document
             doc_type: Type of document ('memory' or 'file')
+            metadata: Additional metadata to include
             
         Returns:
             Tuple of (embedding_ids, chunk_texts, metadatas)
@@ -58,17 +60,23 @@ class IngestionService:
         chunk_texts = []
         metadatas = []
         
+        base_metadata = {
+            "document_id": document_id,
+            "title": title,
+            "type": doc_type
+        }
+        if metadata:
+            base_metadata.update(metadata)
+        
         for i, chunk_text in enumerate(chunks):
             embedding_id = str(uuid.uuid4())
             
             embedding_ids.append(embedding_id)
             chunk_texts.append(chunk_text)
-            metadatas.append({
-                "document_id": document_id,
-                "chunk_index": i,
-                "title": title,
-                "type": doc_type
-            })
+            
+            chunk_metadata = base_metadata.copy()
+            chunk_metadata["chunk_index"] = i
+            metadatas.append(chunk_metadata)
         
         return embedding_ids, chunk_texts, metadatas
 

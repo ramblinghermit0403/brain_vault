@@ -151,20 +151,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const response = await sendMessage('searchMemory', { query });
             if (response.success) {
-                if (response.data.length === 0) {
-                    searchResults.textContent = 'No results found.';
-                } else {
-                    response.data.forEach(item => {
-                        const div = document.createElement('div');
-                        div.className = 'result-item';
-                        div.innerHTML = `
-              <div class="result-meta">${item.metadata.type || 'Memory'} • ${(item.metadata.score || 0).toFixed(2)}</div>
-              <div>${item.content.substring(0, 150)}${item.content.length > 150 ? '...' : ''}</div>
-            `;
-                        searchResults.appendChild(div);
-                    });
-                }
-                searchResults.classList.remove('hidden');
+                renderResults(response.data);
             } else {
                 showError(searchResults, response.error);
             }
@@ -174,6 +161,109 @@ document.addEventListener('DOMContentLoaded', async () => {
             setLoading(searchBtn, false, 'Search');
         }
     });
+
+    // Fetch latest memories and files when Retrieve tab is clicked
+    document.querySelector('.tab[data-tab="search"]').addEventListener('click', async () => {
+        searchResults.innerHTML = '<div class="status-msg">Loading latest items...</div>';
+        searchResults.classList.remove('hidden');
+
+        try {
+            const response = await sendMessage('getDocuments', {});
+            if (response.success) {
+                // Process Memories
+                const memories = response.data
+                    .filter(d => d.doc_type === 'memory')
+                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                    .slice(0, 5)
+                    .map(d => ({
+                        content: d.content,
+                        metadata: { type: 'Memory', created_at: d.created_at, title: d.title }
+                    }));
+
+                // Process Files
+                const files = response.data
+                    .filter(d => d.doc_type === 'file')
+                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                    .slice(0, 5)
+                    .map(d => ({
+                        content: d.content,
+                        metadata: { type: 'File', created_at: d.created_at, title: d.title }
+                    }));
+
+                searchResults.innerHTML = '';
+
+                if (memories.length > 0) {
+                    const memHeader = document.createElement('div');
+                    memHeader.className = 'result-meta';
+                    memHeader.style.marginTop = '12px';
+                    memHeader.textContent = 'RECENT MEMORIES';
+                    searchResults.appendChild(memHeader);
+                    renderResultItems(memories, searchResults);
+                }
+
+                if (files.length > 0) {
+                    const fileHeader = document.createElement('div');
+                    fileHeader.className = 'result-meta';
+                    fileHeader.style.marginTop = '16px';
+                    fileHeader.textContent = 'RECENT FILES';
+                    searchResults.appendChild(fileHeader);
+                    renderResultItems(files, searchResults);
+                }
+
+                if (memories.length === 0 && files.length === 0) {
+                    searchResults.innerHTML = '<div class="status-msg">No items found.</div>';
+                }
+            } else {
+                showError(searchResults, response.error);
+            }
+        } catch (err) {
+            showError(searchResults, err.message);
+        }
+    });
+
+    function renderResults(items) {
+        searchResults.innerHTML = '';
+        if (items.length === 0) {
+            searchResults.textContent = 'No results found.';
+            searchResults.classList.remove('hidden');
+            return;
+        }
+        renderResultItems(items, searchResults);
+        searchResults.classList.remove('hidden');
+    }
+
+    function renderResultItems(items, container) {
+        items.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'result-item';
+
+            // Truncate content for display
+            const displayContent = item.content.length > 150 ? item.content.substring(0, 150) + '...' : item.content;
+            const title = item.metadata.title || item.metadata.type;
+            const date = item.metadata.created_at ? new Date(item.metadata.created_at).toLocaleDateString() : '';
+
+            div.innerHTML = `
+                <div class="result-header" style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                    <span class="result-meta" style="font-weight:600;">${title}</span>
+                    <span class="result-meta">${date}</span>
+                </div>
+                <div style="margin-bottom:8px;">${displayContent}</div>
+                <button class="secondary-btn copy-btn" style="padding:4px 8px; font-size:11px; width:auto; margin-top:0;">Copy</button>
+            `;
+
+            // Add copy functionality
+            const copyBtn = div.querySelector('.copy-btn');
+            copyBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(item.content);
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => copyBtn.textContent = originalText, 1500);
+            });
+
+            container.appendChild(div);
+        });
+    }
 
     // --- Helpers ---
 

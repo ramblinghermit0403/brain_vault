@@ -15,10 +15,11 @@ class VectorStore:
             metadatas=metadatas
         )
 
-    def query(self, query_text: str, n_results: int = 5):
+    def query(self, query_text: str, n_results: int = 5, where: Dict[str, Any] = None):
         return self.collection.query(
             query_texts=[query_text],
-            n_results=n_results
+            n_results=n_results,
+            where=where
         )
 
     def delete(self, ids: List[str]):

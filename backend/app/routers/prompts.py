@@ -32,7 +32,7 @@ async def generate_prompt(
     """
     # 1. Retrieve Context
     # We use a higher top_k to get enough candidates, then filter/truncate
-    results = vector_store.query(request.query, n_results=10)
+    results = vector_store.query(request.query, n_results=10, where={"user_id": current_user.id})
     
     retrieved_texts = []
     if results["documents"]:

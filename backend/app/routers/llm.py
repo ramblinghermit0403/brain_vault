@@ -31,7 +31,7 @@ async def chat_with_llm(
     """
     try:
         # 1. Retrieve context
-        results = vector_store.query(request.query, n_results=request.top_k)
+        results = vector_store.query(request.query, n_results=request.top_k, where={"user_id": current_user.id})
         context = []
         if results["documents"]:
              context = results["documents"][0]

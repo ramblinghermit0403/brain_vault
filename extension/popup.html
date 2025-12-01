@@ -1,33 +1,259 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <title>Brain Vault</title>
+  <link rel="stylesheet" href="styles.css">
   <style>
-    body { width: 300px; padding: 16px; font-family: sans-serif; }
-    input, button, textarea { width: 100%; margin-bottom: 10px; padding: 8px; box-sizing: border-box; }
-    button { background-color: #4F46E5; color: white; border: none; cursor: pointer; border-radius: 4px; }
-    button:hover { background-color: #4338CA; }
-    .hidden { display: none; }
-    #result { white-space: pre-wrap; font-size: 12px; background: #f3f4f6; padding: 8px; border-radius: 4px; }
+    body {
+      width: 320px;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      background-color: #ffffff;
+      color: #171717;
+    }
+
+    /* Header */
+    .header {
+      padding: 16px;
+      border-bottom: 1px solid #e5e5e5;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #171717;
+    }
+
+    .header .logout {
+      font-size: 12px;
+      color: #737373;
+      cursor: pointer;
+      border: none;
+      background: none;
+    }
+
+    .header .logout:hover {
+      color: #ef4444;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #e5e5e5;
+      background: #f9fafb;
+    }
+
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 10px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #737373;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+
+    .tab:hover {
+      background: #f3f4f6;
+      color: #171717;
+    }
+
+    .tab.active {
+      color: #3b82f6;
+      border-bottom-color: #3b82f6;
+      background: #ffffff;
+    }
+
+    /* Content */
+    .content {
+      padding: 16px;
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    /* Forms */
+    input,
+    textarea,
+    select {
+      width: 100%;
+      margin-bottom: 12px;
+      padding: 10px;
+      box-sizing: border-box;
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: #3b82f6;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #3b82f6;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: #2563eb;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    button.secondary {
+      background-color: #f3f4f6;
+      color: #374151;
+      margin-top: 8px;
+    }
+
+    button.secondary:hover {
+      background-color: #e5e7eb;
+    }
+
+    /* Results */
+    .result-box {
+      margin-top: 12px;
+      white-space: pre-wrap;
+      font-size: 12px;
+      background: #f9fafb;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #e5e5e5;
+      max-height: 200px;
+      overflow-y: auto;
+      color: #374151;
+    }
+
+    .result-item {
+      padding: 8px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    .result-item:last-child {
+      border-bottom: none;
+    }
+
+    .result-meta {
+      font-size: 10px;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .error {
+      color: #ef4444;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    .success {
+      color: #10b981;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    /* Login */
+    #login-view {
+      padding: 24px 16px;
+      text-align: center;
+    }
+
+    #login-view h2 {
+      margin-top: 0;
+      font-size: 18px;
+      margin-bottom: 16px;
+    }
+
+    #login-view p {
+      font-size: 12px;
+      color: #737373;
+      margin-top: 12px;
+    }
   </style>
 </head>
+
 <body>
-  <h2>Brain Vault</h2>
-  
-  <div id="login-view">
-    <input type="text" id="token-input" placeholder="Paste JWT Token here">
-    <button id="save-token">Save Token</button>
-    <p style="font-size: 12px; color: #666;">Get token from Brain Vault Dashboard > Settings (Coming Soon) or DevTools.</p>
+
+  <!-- Login View -->
+  <div id="login-view" class="hidden">
+    <h2>Welcome Back</h2>
+    <input type="text" id="token-input" placeholder="Paste Extension Token here">
+    <button id="save-token">Connect to Brain Vault</button>
+    <p>Get your token from Brain Vault Settings.</p>
   </div>
 
-  <div id="main-view" class="hidden">
-    <textarea id="query-input" rows="3" placeholder="What do you want to ask?"></textarea>
-    <button id="generate-btn">Generate Prompt</button>
-    <div id="result" class="hidden"></div>
-    <button id="copy-btn" class="hidden">Copy to Clipboard</button>
-    <button id="logout-btn" style="background-color: #ef4444; margin-top: 10px;">Logout</button>
+  <!-- Main App -->
+  <div id="main-app" class="hidden">
+    <div class="header">
+      <h1>Brain Vault</h1>
+      <button id="logout-btn" class="logout">Logout</button>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="generate">Generate</div>
+      <div class="tab" data-tab="save">Save</div>
+      <div class="tab" data-tab="search">Retrieve</div>
+    </div>
+
+    <div class="content">
+
+      <!-- Generate Tab -->
+      <div id="view-generate" class="view active">
+        <textarea id="gen-query" rows="3" placeholder="What do you want to ask?"></textarea>
+        <button id="gen-btn">Generate Prompt</button>
+        <div id="gen-result" class="result-box hidden"></div>
+        <button id="gen-copy" class="secondary hidden">Copy to Clipboard</button>
+      </div>
+
+      <!-- Save Tab -->
+      <div id="view-save" class="view">
+        <input type="text" id="save-title" placeholder="Title (optional)">
+        <textarea id="save-content" rows="6" placeholder="Paste content or type here..."></textarea>
+        <button id="save-btn">Save to Memory</button>
+        <div id="save-status" class="hidden"></div>
+      </div>
+
+      <!-- Search Tab -->
+      <div id="view-search" class="view">
+        <input type="text" id="search-query" placeholder="Search your memories...">
+        <button id="search-btn">Search</button>
+        <div id="search-results" class="result-box hidden"></div>
+      </div>
+
+    </div>
   </div>
 
   <script src="popup.js"></script>
 </body>
+
 </html>
