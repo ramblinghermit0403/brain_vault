@@ -132,7 +132,8 @@ def get_documents(
             "file_type": doc.file_type,
             "doc_type": doc.doc_type,
             "created_at": doc.created_at,
-            "updated_at": doc.updated_at
+            "updated_at": doc.updated_at,
+            "tags": doc.tags
         })
     
     return result
@@ -162,10 +163,12 @@ from pydantic import BaseModel
 class MemoryCreate(BaseModel):
     title: str
     content: str
+    tags: List[str] = []
 
 class MemoryUpdate(BaseModel):
     title: str
     content: str
+    tags: List[str] = []
 
 @router.post("/memory", response_model=Any)
 def create_memory(
@@ -183,7 +186,8 @@ def create_memory(
         source=None,  # Memories don't have a source file
         file_type=None,
         doc_type="memory",
-        user_id=current_user.id
+        user_id=current_user.id,
+        tags=memory.tags
     )
     db.add(document)
     db.commit()
@@ -195,7 +199,7 @@ def create_memory(
         document_id=document.id,
         title=document.title,
         doc_type="memory",
-        metadata={"user_id": current_user.id}
+        metadata={"user_id": current_user.id, "tags": str(memory.tags) if memory.tags else ""}
     )
     
     # Store Chunks in DB
@@ -232,12 +236,10 @@ def update_document(
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
     
-    # if document.doc_type != "memory":
-    #     raise HTTPException(status_code=400, detail="Can only edit memory-type documents")
-    
     # Update document
     document.title = memory.title
     document.content = memory.content
+    document.tags = memory.tags
     
     # Delete old chunks from vector store
     old_chunk_ids = [chunk.embedding_id for chunk in document.chunks if chunk.embedding_id]
@@ -258,7 +260,7 @@ def update_document(
         document_id=document.id,
         title=document.title,
         doc_type=document.doc_type,
-        metadata={"user_id": current_user.id}
+        metadata={"user_id": current_user.id, "tags": str(document.tags) if document.tags else ""}
     )
     
     # Store new chunks in DB

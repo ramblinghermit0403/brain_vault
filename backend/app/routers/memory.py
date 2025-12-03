@@ -30,6 +30,7 @@ def create_memory(
         title=memory_in.title,
         content=memory_in.content,
         user_id=current_user.id,
+        tags=memory_in.tags,
         embedding_id=embedding_id
     )
     db.add(memory)
@@ -47,9 +48,9 @@ def create_memory(
     # Add to Vector DB
     try:
         vector_store.add_documents(
-            ids=[embedding_id],
-            documents=[memory_in.content],
-            metadatas=[{"memory_id": memory.id, "type": "memory", "title": memory_in.title, "user_id": current_user.id}]
+            ids=ids,
+            documents=documents_content,
+            metadatas=metadatas
         )
         print("Memory added to Vector Store")
     except Exception as e:
@@ -86,18 +87,23 @@ def read_memories(
             "user_id": mem.user_id,
             "created_at": mem.created_at,
             "updated_at": mem.updated_at,
+            "tags": mem.tags,
             "type": "memory"
         })
         
     for doc in documents:
+        # Check if document is actually a memory
+        doc_type = "memory" if doc.doc_type == "memory" else "document"
+        
         results.append({
             "id": f"doc_{doc.id}",
             "title": doc.title,
-            "content": f"Uploaded Document: {doc.source} ({doc.file_type})",
+            "content": doc.content if doc.content else f"Uploaded Document: {doc.source} ({doc.file_type})",
             "user_id": doc.user_id,
             "created_at": doc.created_at,
             "updated_at": None,
-            "type": "document"
+            "type": doc_type,
+            "tags": doc.tags
         })
     
     # Sort by created_at desc
@@ -119,7 +125,13 @@ def update_memory(
     if memory_id.startswith("doc_"):
         raise HTTPException(status_code=400, detail="Cannot edit documents via memory editor")
         
-    real_id = int(memory_id.split("_")[1])
+    if "_" in memory_id:
+        real_id = int(memory_id.split("_")[1])
+    else:
+        try:
+            real_id = int(memory_id)
+        except ValueError:
+             raise HTTPException(status_code=400, detail="Invalid ID format")
     
     memory = db.query(Memory).filter(Memory.id == real_id, Memory.user_id == current_user.id).first()
     if not memory:
@@ -127,17 +139,41 @@ def update_memory(
     
     memory.title = memory_in.title
     memory.content = memory_in.content
+    memory.tags = memory_in.tags
     db.commit()
     db.refresh(memory)
     
     # Update Vector DB (Delete old, add new)
     if memory.embedding_id:
+        # If we have a single embedding_id stored, delete it. 
+        # But if we switch to chunking, we might have multiple.
+        # The Memory model only has one embedding_id column.
+        # This implies the original design didn't support chunking for memories properly, 
+        # or it stored the ID of the first chunk?
+        # create_memory generates one embedding_id for the Memory object, 
+        # but ingestion_service generates new IDs for chunks.
+        # We should probably delete by metadata filter if possible, but vector_store.delete takes IDs.
+        # For now, let's delete the one we know.
         vector_store.delete(ids=[memory.embedding_id])
     
+    # Chunk and process
+    ids, documents_content, metadatas = ingestion_service.process_text(
+        text=memory.content,
+        document_id=memory.id, # Using memory.id as document_id for ingestion
+        title=memory.title,
+        doc_type="memory",
+        metadata={"user_id": current_user.id, "memory_id": memory.id, "tags": str(memory.tags) if memory.tags else ""}
+    )
+    
+    # Update memory with the first embedding ID (or we need a better way to track chunks for memories)
+    if ids:
+        memory.embedding_id = ids[0]
+        db.commit()
+
     vector_store.add_documents(
-        ids=[memory.embedding_id],
-        documents=[memory.content],
-        metadatas=[{"memory_id": memory.id, "type": "memory", "title": memory.title, "user_id": current_user.id}]
+        ids=ids,
+        documents=documents_content,
+        metadatas=metadatas
     )
     
     # Return with prefix
@@ -148,6 +184,7 @@ def update_memory(
         "user_id": memory.user_id,
         "created_at": memory.created_at,
         "updated_at": memory.updated_at,
+        "tags": memory.tags,
         "type": "memory"
     }
 

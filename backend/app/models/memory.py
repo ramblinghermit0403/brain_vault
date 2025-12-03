@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.base import Base
@@ -10,6 +10,7 @@ class Memory(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     title = Column(String, index=True)
     content = Column(Text, nullable=False)
+    tags = Column(JSON, nullable=True)
     embedding_id = Column(String) # ID in Vector DB
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

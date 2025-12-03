@@ -1,10 +1,11 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 class MemoryBase(BaseModel):
     title: str
     content: str
+    tags: Optional[List[str]] = None
 
 class MemoryCreate(MemoryBase):
     pass

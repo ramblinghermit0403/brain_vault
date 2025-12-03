@@ -15,6 +15,7 @@ class ChatRequest(BaseModel):
     provider: str = "openai"
     api_key: str
     top_k: int = 5
+    filter: Optional[dict] = None
 
 class ChatResponse(BaseModel):
     response: str
@@ -31,7 +32,30 @@ async def chat_with_llm(
     """
     try:
         # 1. Retrieve context
-        results = vector_store.query(request.query, n_results=request.top_k, where={"user_id": current_user.id})
+        where_clause = {"user_id": current_user.id}
+        if request.filter:
+            # Ensure IDs are integers
+            if "document_id" in request.filter:
+                try:
+                    request.filter["document_id"] = int(request.filter["document_id"])
+                except:
+                    pass
+            if "memory_id" in request.filter:
+                try:
+                    request.filter["memory_id"] = int(request.filter["memory_id"])
+                except:
+                    pass
+                    
+            # ChromaDB requires $and for multiple conditions
+            where_clause = {
+                "$and": [
+                    {"user_id": current_user.id},
+                    request.filter
+                ]
+            }
+            
+        results = vector_store.query(request.query, n_results=request.top_k, where=where_clause)
+        
         context = []
         if results["documents"]:
              context = results["documents"][0]
