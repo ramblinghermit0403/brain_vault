@@ -8,6 +8,7 @@ from app.models.user import User
 from app.models.memory import Memory
 from app.schemas.memory import Memory as MemorySchema, MemoryCreate, MemoryUpdate
 from app.services.vector_store import vector_store
+from app.services.ingestion import ingestion_service
 
 router = APIRouter()
 

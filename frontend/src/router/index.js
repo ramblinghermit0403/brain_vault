@@ -6,6 +6,12 @@ const router = createRouter({
     routes: [
         {
             path: '/',
+            name: 'landing',
+            component: () => import('../views/LandingPage.vue'),
+            meta: { requiresAuth: false }
+        },
+        {
+            path: '/dashboard',
             name: 'dashboard',
             component: () => import('../views/DashboardView.vue'),
             meta: { requiresAuth: true }
@@ -37,15 +43,27 @@ const router = createRouter({
             name: 'prompts',
             component: () => import('../views/PromptGeneratorView.vue'),
             meta: { requiresAuth: true }
+        },
+        {
+            path: '/map',
+            name: 'map',
+            component: () => import('../views/MemoryMapView.vue')
         }
     ]
 });
 
 router.beforeEach((to, from, next) => {
     const authStore = useAuthStore();
+
+    // If accessing a protected route and not authenticated, redirect to login
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {
         next('/login');
-    } else {
+    }
+    // If accessing landing page (root) and already authenticated, redirect to dashboard
+    else if (to.path === '/' && authStore.isAuthenticated) {
+        next('/dashboard');
+    }
+    else {
         next();
     }
 });

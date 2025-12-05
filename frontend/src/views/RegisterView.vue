@@ -1,58 +1,37 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-    <!-- Background Shapes -->
-    <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-      <div class="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-purple-400 opacity-30 blur-3xl mix-blend-multiply animate-blob"></div>
-      <div class="absolute top-1/2 left-1/2 w-96 h-96 rounded-full bg-indigo-400 opacity-30 blur-3xl mix-blend-multiply animate-blob animation-delay-2000"></div>
-      <div class="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-pink-400 opacity-30 blur-3xl mix-blend-multiply animate-blob animation-delay-4000"></div>
-    </div>
-
-    <div class="max-w-md w-full space-y-8 relative z-10 bg-white/90 backdrop-blur-lg p-10 rounded-2xl shadow-2xl border border-white/20">
+  <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-sm border border-gray-100">
       <div class="text-center">
-        <div class="mx-auto h-16 w-16 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center shadow-lg transform -rotate-3 hover:rotate-0 transition-transform duration-300">
-          <svg class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="mx-auto h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
+          <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
           </svg>
         </div>
-        <h2 class="mt-6 text-3xl font-extrabold text-gray-900 tracking-tight">
+        <h2 class="mt-6 text-2xl font-bold text-gray-900">
           Create Account
         </h2>
         <p class="mt-2 text-sm text-gray-600">
-          Join <span class="font-semibold text-purple-600">Brain Vault</span> today
+          Join <span class="font-semibold text-blue-600">Brain Vault</span> today
         </p>
       </div>
 
       <form class="mt-8 space-y-6" @submit.prevent="handleRegister">
-        <div class="space-y-5">
+        <div class="space-y-4">
           <div>
             <label for="email-address" class="block text-sm font-medium text-gray-700 mb-1">Email address</label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                </svg>
-              </div>
-              <input id="email-address" name="email" type="email" autocomplete="email" required v-model="email" class="appearance-none block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent sm:text-sm transition-all duration-200 bg-gray-50 focus:bg-white" placeholder="you@example.com" />
-            </div>
+            <input id="email-address" name="email" type="email" autocomplete="email" required v-model="email" class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="you@example.com" />
           </div>
           
           <div>
             <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              </div>
-              <input id="password" name="password" type="password" autocomplete="new-password" required v-model="password" class="appearance-none block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent sm:text-sm transition-all duration-200 bg-gray-50 focus:bg-white" placeholder="••••••••" />
-            </div>
+            <input id="password" name="password" type="password" autocomplete="new-password" required v-model="password" class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="••••••••" />
           </div>
         </div>
 
         <div>
-          <button type="submit" :disabled="loading" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed">
+          <button type="submit" :disabled="loading" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed transition-colors duration-200">
             <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-              <svg v-if="!loading" class="h-5 w-5 text-purple-300 group-hover:text-purple-200 transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg v-if="!loading" class="h-5 w-5 text-blue-200 group-hover:text-blue-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
               </svg>
               <svg v-else class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -64,7 +43,7 @@
           </button>
         </div>
         
-        <div v-if="error" class="rounded-md bg-red-50 p-4 animate-fade-in">
+        <div v-if="error" class="rounded-md bg-red-50 p-4">
           <div class="flex">
             <div class="flex-shrink-0">
               <svg class="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -83,7 +62,7 @@
       <div class="text-center mt-4">
         <p class="text-sm text-gray-600">
           Already have an account? 
-          <router-link to="/login" class="font-medium text-purple-600 hover:text-purple-500 transition-colors duration-200">
+          <router-link to="/login" class="font-medium text-blue-600 hover:text-blue-500">
             Sign in
           </router-link>
         </p>
@@ -96,6 +75,7 @@
 import { ref } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toastification';
 
 const email = ref('');
 const password = ref('');
@@ -103,6 +83,7 @@ const loading = ref(false);
 const error = ref('');
 const authStore = useAuthStore();
 const router = useRouter();
+const toast = useToast();
 
 const handleRegister = async () => {
   loading.value = true;
@@ -112,7 +93,7 @@ const handleRegister = async () => {
     // Show success message or auto-login? 
     // For now, alert and redirect to login as per original flow, but cleaner.
     // Ideally we'd use a toast notification.
-    alert('Registration successful! Please login.');
+    toast.success('Registration successful! Please login.');
     router.push('/login');
   } catch (err) {
     error.value = 'Registration failed. Please try again.';
@@ -123,26 +104,5 @@ const handleRegister = async () => {
 </script>
 
 <style scoped>
-.animate-blob {
-  animation: blob 7s infinite;
-}
-.animation-delay-2000 {
-  animation-delay: 2s;
-}
-.animation-delay-4000 {
-  animation-delay: 4s;
-}
-@keyframes blob {
-  0% { transform: translate(0px, 0px) scale(1); }
-  33% { transform: translate(30px, -50px) scale(1.1); }
-  66% { transform: translate(-20px, 20px) scale(0.9); }
-  100% { transform: translate(0px, 0px) scale(1); }
-}
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+/* Minimal styles, no custom animations needed for now */
 </style>

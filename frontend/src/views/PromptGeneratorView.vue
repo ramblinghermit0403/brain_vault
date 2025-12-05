@@ -112,6 +112,7 @@
 <script setup>
 import { ref } from 'vue';
 import api from '../services/api';
+import { useToast } from 'vue-toastification';
 
 const query = ref('');
 const templateId = ref('standard');
@@ -121,6 +122,7 @@ const generatedPrompt = ref('');
 const contextUsed = ref([]);
 const tokenCount = ref(0);
 const copied = ref(false);
+const toast = useToast();
 
 const generatePrompt = async () => {
   loading.value = true;
@@ -139,7 +141,7 @@ const generatePrompt = async () => {
     tokenCount.value = response.data.token_count;
   } catch (error) {
     console.error('Error generating prompt:', error);
-    alert('Failed to generate prompt');
+    toast.error('Failed to generate prompt');
   } finally {
     loading.value = false;
   }
@@ -150,8 +152,10 @@ const copyToClipboard = async () => {
     await navigator.clipboard.writeText(generatedPrompt.value);
     copied.value = true;
     setTimeout(() => copied.value = false, 2000);
+    toast.success('Prompt copied to clipboard');
   } catch (err) {
     console.error('Failed to copy:', err);
+    toast.error('Failed to copy prompt');
   }
 };
 </script>

@@ -14,7 +14,13 @@
           <div class="flex-1">
             <div class="flex items-center space-x-2 mb-1">
               <span :class="{'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200': memory.type === 'memory', 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200': memory.type === 'document'}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium">
-                {{ memory.type === 'memory' ? 'Mem' : 'Doc' }}
+                <svg v-if="memory.type === 'memory'" class="mr-1.5 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <svg v-else class="mr-1.5 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                {{ memory.type === 'memory' ? 'Memory' : 'File' }}
               </span>
               <h3 class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ memory.title }}</h3>
             </div>
@@ -27,7 +33,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
             </button>
-            <button @click="deleteMemory(memory.id)" class="text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200">
+            <button @click="confirmDelete(memory.id)" class="text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200">
               <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
@@ -36,15 +42,30 @@
         </div>
       </div>
     </div>
+    <ConfirmationModal 
+      :is-open="showModal" 
+      title="Delete Memory" 
+      message="Are you sure you want to delete this memory? This action cannot be undone."
+      confirm-text="Delete"
+      @confirm="handleDeleteConfirm"
+      @cancel="handleDeleteCancel"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import api from '../services/api';
+import ConfirmationModal from './ConfirmationModal.vue';
+import { useToast } from 'vue-toastification';
 
 const memories = ref([]);
 const loading = ref(false);
+const toast = useToast();
+
+// Modal state
+const showModal = ref(false);
+const itemToDelete = ref(null);
 
 const fetchMemories = async () => {
   loading.value = true;
@@ -53,21 +74,36 @@ const fetchMemories = async () => {
     memories.value = response.data;
   } catch (error) {
     console.error('Error fetching memories:', error);
+    toast.error('Failed to fetch memories');
   } finally {
     loading.value = false;
   }
 };
 
-const deleteMemory = async (id) => {
-  if (!confirm('Are you sure you want to delete this item?')) return;
+const confirmDelete = (id) => {
+  itemToDelete.value = id;
+  showModal.value = true;
+};
+
+const handleDeleteConfirm = async () => {
+  if (!itemToDelete.value) return;
   
   try {
-    await api.delete(`/memory/${id}`);
+    await api.delete(`/memory/${itemToDelete.value}`);
     await fetchMemories();
+    toast.success('Memory deleted successfully');
   } catch (error) {
     console.error('Error deleting memory:', error);
-    alert('Failed to delete item');
+    toast.error('Failed to delete item');
+  } finally {
+    showModal.value = false;
+    itemToDelete.value = null;
   }
+};
+
+const handleDeleteCancel = () => {
+  showModal.value = false;
+  itemToDelete.value = null;
 };
 
 const formatDate = (dateString) => {

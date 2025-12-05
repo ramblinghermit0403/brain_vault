@@ -53,6 +53,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['saved', 'cancelled']);
+import { useToast } from 'vue-toastification';
+const toast = useToast();
 
 const form = ref({
   title: '',
@@ -91,9 +93,10 @@ const save = async () => {
     emit('saved');
     form.value = { title: '', content: '' };
     isEditing.value = false;
+    toast.success('Memory saved successfully');
   } catch (error) {
     console.error('Error saving memory:', error);
-    alert('Failed to save memory: ' + (error.response?.data?.detail || error.message));
+    toast.error('Failed to save memory: ' + (error.response?.data?.detail || error.message));
   } finally {
     loading.value = false;
   }

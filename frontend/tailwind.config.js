@@ -8,10 +8,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#4F46E5', // Indigo 600
-        secondary: '#10B981', // Emerald 500
-        dark: '#111827', // Gray 900
-        light: '#F3F4F6', // Gray 100
+        primary: '#1a73e8', // Google Blue
+        secondary: '#5f6368', // Google Gray
+        dark: '#202124', // Google Dark Gray
+        light: '#f1f3f4', // Google Light Gray
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
