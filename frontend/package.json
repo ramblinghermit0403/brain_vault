@@ -1,0 +1,44 @@
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@guolao/vue-monaco-editor": "^1.6.0",
+    "@heroicons/vue": "^2.2.0",
+    "@milkdown/core": "^7.17.1",
+    "@milkdown/ctx": "^7.17.1",
+    "@milkdown/plugin-history": "^7.17.1",
+    "@milkdown/plugin-listener": "^7.17.1",
+    "@milkdown/plugin-slash": "^7.17.1",
+    "@milkdown/preset-commonmark": "^7.17.1",
+    "@milkdown/prose": "^7.17.1",
+    "@milkdown/theme-nord": "^7.17.1",
+    "@milkdown/vue": "^7.17.1",
+    "@tailwindcss/postcss": "^4.1.17",
+    "axios": "^1.13.2",
+    "d3": "^7.9.0",
+    "driver.js": "^1.4.0",
+    "grid-layout-plus": "^1.1.1",
+    "jwt-decode": "^4.0.0",
+    "markdown-it": "^14.1.0",
+    "monaco-editor": "^0.55.1",
+    "pinia": "^3.0.4",
+    "sweetalert2": "^11.26.3",
+    "vue": "^3.5.24",
+    "vue-router": "^4.6.3",
+    "vue-toastification": "^2.0.0-rc.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "autoprefixer": "^10.4.22",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.17",
+    "vite": "^7.2.4"
+  }
+}

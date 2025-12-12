@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Brain Vault</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- Login View -->
+    <div id="login-view" class="hidden">
+        <div class="login-container">
+            <h2>Welcome Back</h2>
+            <p>Connect your Brain Vault to start saving and retrieving memories.</p>
+            <input type="text" id="token-input" placeholder="Paste Extension Token">
+            <button id="save-token">Connect</button>
+            <p class="help-text">Get your token from Settings > Extension.</p>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="main-app" class="hidden">
+        <header class="header">
+            <h1>Brain Vault</h1>
+            <button id="logout-btn" class="icon-btn" title="Logout">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+            </button>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="generate">Generate</button>
+            <button class="tab" data-tab="save">Save</button>
+            <button class="tab" data-tab="search">Retrieve</button>
+        </div>
+
+        <main class="content">
+            <!-- Generate Tab -->
+            <div id="view-generate" class="view active">
+                <div class="input-group">
+                    <textarea id="gen-query" rows="4" placeholder="What do you want to ask?"></textarea>
+                </div>
+                <button id="gen-btn" class="primary-btn">Generate Prompt</button>
+                <div id="gen-result" class="result-card hidden"></div>
+                <button id="gen-copy" class="secondary-btn hidden">Copy</button>
+            </div>
+
+            <!-- Save Tab -->
+            <div id="view-save" class="view">
+                <div class="input-group">
+                    <input type="text" id="save-title" placeholder="Title (optional)">
+                </div>
+                <div class="input-group">
+                    <textarea id="save-content" rows="8" placeholder="Paste content here..."></textarea>
+                </div>
+                <button id="save-btn" class="primary-btn">Save Memory</button>
+                <div id="save-status" class="status-msg hidden"></div>
+            </div>
+
+            <!-- Search Tab -->
+            <div id="view-search" class="view">
+                <div class="search-bar">
+                    <input type="text" id="search-query" placeholder="Search memories...">
+                    <button id="search-btn" class="icon-btn-search">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div id="search-results" class="results-list hidden"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="sidepanel.js"></script>
+</body>
+
+</html>
