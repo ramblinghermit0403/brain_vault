@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Inter', sans-serif;
+
+  /* App Backgrounds */
+  --color-app: var(--bg-app);
+  --color-surface: var(--bg-surface);
+  --color-surface-2: var(--bg-surface-2);
+  --color-elevated: var(--bg-elevated);
+
+  /* Primary Accent */
+  --color-primary: var(--primary);
+  --color-primary-600: var(--primary-600);
+
+  /* Secondary Accent */
+  --color-accent: var(--accent);
+  --color-accent-600: var(--accent-600);
+
+  /* Status */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+
+  /* Text */
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  /* Interfaces */
+  --color-border: var(--border);
+  --color-divider: var(--divider-strong);
+  --color-backdrop: var(--backdrop);
+
+  --color-input: var(--input-bg);
+  --color-input-border: var(--input-border);
+  --color-placeholder: var(--placeholder);
+}
+
+:root {
+  /* Light Theme Default */
+  --bg-app: #FFFFFF;
+  --bg-surface: #F7FAFC;
+  --bg-surface-2: #EDF2F7;
+  --bg-elevated: #FFFFFF;
+
+  --primary: #0B6E4F;
+  --primary-600: #08563E;
+  --accent: #2B6CB0;
+  --accent-600: #234E88;
+
+  --success: #059669;
+  --warning: #D97706;
+  --danger: #DC2626;
+  --info: #2563EB;
+
+  --text-primary: #0F1724;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+
+  --border: rgba(15, 23, 36, 0.08);
+  --divider-strong: rgba(15, 23, 36, 0.12);
+  --backdrop: rgba(2, 6, 23, 0.4);
+
+  --input-bg: #FFFFFF;
+  --input-border: rgba(15, 23, 36, 0.08);
+  --placeholder: #94A3B8;
+}
+
+.dark {
+  /* Dark Theme */
+  --bg-app: #0B0F12;
+  --bg-surface: #0F1417;
+  --bg-surface-2: #13171A;
+  --bg-elevated: #1B2024;
+
+  --primary: #6EE7B7;
+  --primary-600: #4FD79F;
+  --accent: #60A5FA;
+  --accent-600: #3B82F6;
+
+  --success: #34D399;
+  --warning: #FBBF24;
+  --danger: #F87171;
+  --info: #93C5FD;
+
+  --text-primary: #E6EEF3;
+  --text-secondary: #B8C6CF;
+  --text-muted: #8B9AA3;
+
+  --border: rgba(255, 255, 255, 0.06);
+  --divider-strong: rgba(255, 255, 255, 0.10);
+  --backdrop: rgba(2, 6, 9, 0.6);
+
+  --input-bg: #0E1417;
+  --input-border: rgba(255, 255, 255, 0.06);
+  --placeholder: #6F7F87;
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+body {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+}
+
+/* Scrollbar styling */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #94a3b8;
+  /* Slate 400 - much more visible than border color */
+  border-radius: 20px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #64748b;
+  /* Slate 500 on hover */
+}
+
+/* Hide scrollbar utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}

@@ -1,0 +1,14 @@
+Latest Memory: 26 (User: 4)
+Found 10 matches:
+Match 1: PineconeID=4edab2b4-7398-4b78-baed-fea4c7c41293 | MemID=25 | Sim=15.12% | Self=False
+Match 2: PineconeID=7cac4852-32d0-4714-8906-7e7f5f817dec | MemID=20 | Sim=15.12% | Self=False
+Match 3: PineconeID=7610137c-435c-4e1c-be89-88bbedc0fec1 | MemID=26 | Sim=15.12% | Self=True
+Match 4: PineconeID=d949d40e-a097-44c7-8b39-67aed1215aeb | MemID=24 | Sim=15.12% | Self=False
+Match 5: PineconeID=8624e0a6-39d6-410b-9e46-e1d170d2bfd1 | MemID=23 | Sim=15.12% | Self=False
+Match 6: PineconeID=4c7e2e18-a506-44eb-93e5-37295c597f1b | MemID=26 | Sim=16.88% | Self=True
+Match 7: PineconeID=f6c19a89-5d9b-4c53-9f94-e2c4f4e8a391 | MemID=20 | Sim=16.88% | Self=False
+Match 8: PineconeID=9febdfbd-7c74-4658-8a46-deccab41a227 | MemID=25 | Sim=16.88% | Self=False
+Match 9: PineconeID=91d3ff63-3017-4fb1-b1cb-647a045561cf | MemID=24 | Sim=16.88% | Self=False
+Match 10: PineconeID=3453f4d7-d20c-4598-9f06-02cd8d3ae806 | MemID=21 | Sim=16.88% | Self=False
+
+Conclusion: Logic would NOT find a duplicate (only self or low score matches).
