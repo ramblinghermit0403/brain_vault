@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, JSON
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.base import Base
 
@@ -12,3 +13,5 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     settings = Column(JSON, default={}) # For user preferences like auto_approve
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    chat_sessions = relationship("app.models.chat.ChatSession", back_populates="user", cascade="all, delete-orphan")

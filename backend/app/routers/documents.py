@@ -16,10 +16,10 @@ from app.services.metadata_extraction import metadata_service
 from app.db.session import AsyncSessionLocal
 
 # Wrapper to run in background with fresh session
-async def run_metadata_extraction(memory_id: int, user_id: int):
+async def run_metadata_extraction(memory_id: int, user_id: int, doc_type: str = "memory"):
     async with AsyncSessionLocal() as db:
         try:
-            await metadata_service.process_memory_metadata(memory_id, user_id, db)
+            await metadata_service.process_memory_metadata(memory_id, user_id, db, doc_type)
         except Exception as e:
             print(f"Error in background metadata extraction: {e}")
 
@@ -57,6 +57,7 @@ def extract_text_from_file(file_path: str, file_type: str) -> str:
 
 @router.post("/upload", response_model=Any)
 async def upload_document(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user)
@@ -93,7 +94,7 @@ async def upload_document(
     await db.refresh(document)
     
     # Chunk Text using ingestion service
-    ids, documents_content, metadatas = ingestion_service.process_text(
+    ids, documents_content, metadatas = await ingestion_service.process_text(
         text=text,
         document_id=document.id,
         title=document.title,
@@ -113,6 +114,9 @@ async def upload_document(
         
     await db.commit()
     
+    # Trigger background auto-tagging
+    background_tasks.add_task(run_metadata_extraction, document.id, current_user.id, "document")
+
     # Add to Vector Store
     try:
         vector_store.add_documents(ids=ids, documents=documents_content, metadatas=metadatas)
@@ -296,7 +300,7 @@ async def update_document(
     await db.commit()
     
     # Re-chunk the updated content using ingestion service
-    ids, documents_content, metadatas = ingestion_service.process_text(
+    ids, documents_content, metadatas = await ingestion_service.process_text(
         text=memory.content,
         document_id=document.id,
         title=document.title,

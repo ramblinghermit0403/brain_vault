@@ -7,11 +7,16 @@ from app.models.client import AIClient
 from app.models.history import MemoryHistory
 from app.models.audit import AuditLog
 from app.models.cluster import MemoryCluster
+from app.models.chat import ChatSession, ChatMessage
 
-def init_db():
+import asyncio
+
+async def init():
     print("Creating database tables...")
-    Base.metadata.create_all(bind=engine)
+    from app.db.session import engine
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     print("Tables created successfully.")
 
 if __name__ == "__main__":
-    init_db()
+    asyncio.run(init())

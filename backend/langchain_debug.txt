@@ -1,0 +1,5 @@
+LangChain Version: 1.0.8
+LangChain File: C:\Users\himan\OneDrive\Documents\brain_vault\backend\venv\Lib\site-packages\langchain\__init__.py
+LangChain Agents File: C:\Users\himan\OneDrive\Documents\brain_vault\backend\venv\Lib\site-packages\langchain\agents\__init__.py
+Dir(langchain.agents): ['AgentState', '__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__path__', '__spec__', 'create_agent', 'factory', 'middleware', 'structured_output']
+Has AgentExecutor: False

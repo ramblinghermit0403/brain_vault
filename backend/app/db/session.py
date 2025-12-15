@@ -4,7 +4,7 @@ from sqlalchemy.pool import NullPool
 from app.core.config import settings
 
 # Handle Async Driver URL fix
-database_url = settings.DATABASE_URL
+database_url = settings.assemble_db_url
 if database_url and database_url.startswith("postgresql://"):
     database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 elif database_url and database_url.startswith("sqlite://"):

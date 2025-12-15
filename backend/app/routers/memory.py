@@ -7,6 +7,7 @@ import uuid
 import random
 from datetime import datetime, timedelta
 from sqlalchemy import or_
+from sqlalchemy.orm import selectinload
 
 from app.api import deps
 from app.models.user import User
@@ -296,7 +297,7 @@ async def update_memory(
         vector_store.delete(ids=[memory.embedding_id])
     
     # Chunk and process
-    ids, documents_content, metadatas = ingestion_service.process_text(
+    ids, documents_content, metadatas = await ingestion_service.process_text(
         text=memory.content,
         document_id=memory.id, # Using memory.id as document_id for ingestion
         title=memory.title,
@@ -339,7 +340,11 @@ async def delete_memory(
     if memory_id.startswith("doc_"):
         # Handle Document Deletion
         doc_id = int(memory_id.split("_")[1])
-        result = await db.execute(select(Document).where(Document.id == doc_id, Document.user_id == current_user.id))
+        result = await db.execute(
+            select(Document)
+            .where(Document.id == doc_id, Document.user_id == current_user.id)
+            .options(selectinload(Document.chunks))
+        )
         document = result.scalars().first()
         if not document:
             raise HTTPException(status_code=404, detail="Document not found")

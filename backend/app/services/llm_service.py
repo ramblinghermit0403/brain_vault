@@ -6,10 +6,8 @@ from app.core.config import settings
 
 class LLMService:
     def __init__(self):
-        # Initialize with dummy key if not present to avoid startup error, 
-        # but requests will fail if key is missing.
-        self.openai_api_key = "OPENAI_API_KEY" 
-        # In a real app, we'd fetch from settings or user input.
+        self.api_key = getattr(settings, "GEMINI_API_KEY", None) or getattr(settings, "OPENAI_API_KEY", None)
+        self.openai_api_key = self.api_key # Backwards compatibility for now
         
     async def generate_response(self, query: str, context: List[str], provider: str = "openai", api_key: Optional[str] = None) -> str:
         if not api_key:
@@ -42,7 +40,7 @@ class LLMService:
         elif provider == "gemini":
             try:
                 genai.configure(api_key=api_key)
-                # Using gemini-2.5-flash as requested (Year 2025)
+                # Using gemini-2.5-flash as requested
                 model = genai.GenerativeModel('gemini-2.5-flash')
                 
                 combined = f"{system_prompt}\n\nUser Question: {query}"
@@ -96,11 +94,16 @@ Required Output (JSON):
 }}
 
 Rules for Tags:
-- Generate 3-5 relevant tags.
-- Format: lowercase, kebab-case (e.g., "project-management", "react-js").
-- PREFER existing tags from the provided context if they match.
-- Create new tags only if necessary.
-- If content is too short/generic, return minimal tags.
+1. **Identify Named Entities**: Extract specific People, Organizations, Locations, Events, and Software/Tools.
+   - Examples: "Sam Altman", "OpenAI", "Paris", "WWDC 2024", "PostgreSQL".
+2. **Identify Core Topics**: Add 1-2 high-level topics if applicable.
+   - Examples: "artificial-intelligence", "meeting-notes".
+3. **Format**:
+   - Use lowercase, kebab-case for generic topics (e.g., "machine-learning").
+   - **Keep proper capitalization and spacing for Named Entities** to distinguish them (e.g., "Sam Altman" NOT "sam-altman", "OpenAI" NOT "openai").
+   - Return a flat list of strings mixing both entities and topics.
+4. **Context**: PREFER existing tags from the provided context if they match.
+5. **Quantity**: Aim for 3-7 high-quality tags.
 
 Existing Tags Context:
 [{tag_context_str}]"""
@@ -129,8 +132,8 @@ Existing Tags Context:
                         res = model.generate_content(combined_prompt)
                         text = res.text
                     except Exception as e_model:
-                        print(f"Gemini 2.5 failed ({e_model}), trying gemini-1.5-flash")
-                        model = genai.GenerativeModel('gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
+                        print(f"Gemini 2.5 failed ({e_model}), trying gemini-2.5-flash fallback")
+                        model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
                         combined_prompt = f"{system_instruction}\n\n{user_message}"
                         res = model.generate_content(combined_prompt)
                         text = res.text
@@ -160,5 +163,96 @@ Existing Tags Context:
         except Exception as e:
             print(f"Metadata extraction failed: {e}")
             return {}
+
+    async def generate_chunk_enrichment(self, content: str, api_key: Optional[str] = None) -> dict:
+        """
+        Generate summary, Q&A, and entities for a text chunk.
+        """
+        if len(content) < 50:
+            return {}
+            
+        target_key = api_key or self.openai_api_key
+        # Heuristic: use openai key if available, else assume gemini configured globally or pass explicitly
+        
+        system_prompt = """You are a precise data enricher for RAG systems.
+Analyze the provided text chunk and generate the following JSON output:
+
+{
+    "summary": "1-2 sentence extractive summary of the key facts.",
+    "generated_qas": [
+        {"q": "Question 1?", "a": "Short answer 1."},
+        {"q": "Question 2?", "a": "Short answer 2."}
+    ],
+    "entities": ["Entity1", "Entity2"]
+}
+
+Rules:
+- Questions should be specific and answerable from the chunk.
+- Entities should be specific (Person, Org, Product, Location).
+- Keep JSON valid and minimal."""
+
+        user_message = f"Chunk Content:\n{content[:2000]}"
+        
+        try:
+            if target_key and target_key.startswith("sk-"):
+                llm = ChatOpenAI(api_key=target_key, model="gpt-3.5-turbo", temperature=0)
+                messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_message)]
+                res = await llm.ainvoke(messages)
+                text = res.content
+            else:
+                # Gemini
+                if target_key: genai.configure(api_key=target_key)
+                model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
+                res = model.generate_content(f"{system_prompt}\n\n{user_message}")
+                text = res.text
+                
+            import json
+            import re
+            
+            # Clean
+            text = text.replace("```json", "").replace("```", "").strip()
+            
+            try:
+                return json.loads(text)
+            except:
+                match = re.search(r'\{.*\}', text, re.DOTALL)
+                if match: return json.loads(match.group())
+                return {}
+                
+        except Exception as e:
+            print(f"Chunk enrichment failed: {e}")
+            return {}
+
+    async def generate_chat_title(self, conversation_context: str, api_key: Optional[str] = None) -> str:
+        """
+        Generate a concise (3-6 words) title for a chat session.
+        """
+        target_key = api_key or self.api_key
+        
+        if not target_key:
+            print("Title Generation: No API Key found.")
+            return "New Chat"
+        
+        system_prompt = (
+            "You are a helpful assistant that generates concise titles for chat sessions. "
+            "Generate a short, descriptive title (maximum 6 words) for the provided conversation start. "
+            "Do not use quotes or prefixes like 'Title:'. Just the text."
+        )
+        
+        try:
+            if target_key and target_key.startswith("sk-"):
+                llm = ChatOpenAI(api_key=target_key, model="gpt-3.5-turbo", temperature=0.7)
+                messages = [SystemMessage(content=system_prompt), HumanMessage(content=conversation_context)]
+                res = await llm.ainvoke(messages)
+                return res.content.strip()
+            else:
+                # Gemini
+                if target_key: genai.configure(api_key=target_key)
+                model = genai.GenerativeModel('gemini-2.5-flash')
+                res = model.generate_content(f"{system_prompt}\n\nConversation:\n{conversation_context}")
+                return res.text.strip()
+        except Exception as e:
+            print(f"Title generation failed: {e}")
+            return "New Chat"
 
 llm_service = LLMService()

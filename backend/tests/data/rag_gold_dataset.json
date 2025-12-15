@@ -1,0 +1,32 @@
+[
+    {
+        "query": "What is the purpose of AI Brain Vault?",
+        "expected_doc": "SRS",
+        "expected_section": "1.1 Purpose",
+        "answer_type": "definition"
+    },
+    {
+        "query": "What file formats can be uploaded?",
+        "expected_doc": "SRS",
+        "expected_section": "3.2 File Upload & Ingestion",
+        "answer_type": "list"
+    },
+    {
+        "query": "What is the default chunk size used during ingestion?",
+        "expected_doc": "SRS",
+        "expected_section": "3.2 FR3",
+        "answer_type": "numeric"
+    },
+    {
+        "query": "How does retrieval work internally?",
+        "expected_doc": "SRS",
+        "expected_section": "8.2 Retrieval Workflow",
+        "answer_type": "process"
+    },
+    {
+        "query": "How does the system integrate with ChatGPT?",
+        "expected_doc": "SRS",
+        "expected_section": "3.5 LLM Connectors",
+        "answer_type": "process"
+    }
+]

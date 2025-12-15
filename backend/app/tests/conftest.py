@@ -4,6 +4,16 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+import sys
+from unittest.mock import MagicMock
+
+try:
+    import sentence_transformers
+except ImportError:
+    # Mock sentence_transformers if not installed to avoid test failure
+    # This is safe because we are not testing ingestion/embedding logic here
+    sys.modules["sentence_transformers"] = MagicMock()
+
 from app.main import app
 from app.db.base import Base
 from app.api.deps import get_db

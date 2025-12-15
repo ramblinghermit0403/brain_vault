@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, JSON
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, JSON, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.base import Base
@@ -29,5 +29,13 @@ class Chunk(Base):
     text = Column(Text, nullable=False)
     embedding_id = Column(String) # ID in Vector DB
     metadata_json = Column(JSON, nullable=True)
+    summary = Column(Text, nullable=True)
+    generated_qas = Column(JSON, nullable=True)
+    tokens_count = Column(Integer, nullable=True)
+    trust_score = Column(Float, default=0.5)
+    last_validated_at = Column(DateTime(timezone=True), nullable=True)
+    feedback_score = Column(Float, default=0.0)
+    entities = Column(JSON, nullable=True)
+    tags = Column(JSON, nullable=True)
 
     document = relationship("Document", back_populates="chunks")

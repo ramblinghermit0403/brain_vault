@@ -58,7 +58,7 @@ def ingest_memory_task(memory_id: int, user_id: int, content: str, title: str, t
     async def _ingest():
         try:
             # 1. Process Text (CPU bound, maybe API bound for embeddings)
-            ids, documents_content, metadatas = ingestion_service.process_text(
+            ids, documents_content, metadatas = await ingestion_service.process_text(
                 text=content,
                 document_id=memory_id,
                 title=title,

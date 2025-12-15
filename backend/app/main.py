@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.routers import auth, retrieval, llm, documents, memory, export, prompts, llm_api, inbox, user_keys, ws, settings as user_settings
+from app.routers import auth, retrieval, llm, documents, memory, export, prompts, llm_api, inbox, user_keys, ws, settings as user_settings, feedback, chat_api
 from app.db.base import Base
 from app.db.session import engine
 
@@ -35,7 +35,10 @@ app.include_router(llm_api.router, prefix=f"{settings.API_V1_STR}/llm", tags=["l
 app.include_router(inbox.router, prefix=f"{settings.API_V1_STR}/inbox", tags=["inbox"])
 app.include_router(user_keys.router, prefix=f"{settings.API_V1_STR}/user", tags=["user-keys"])
 app.include_router(user_settings.router, prefix=f"{settings.API_V1_STR}/user", tags=["user-settings"])
+app.include_router(feedback.router, prefix=f"{settings.API_V1_STR}/feedback", tags=["feedback"])
+app.include_router(chat_api.router, prefix=f"{settings.API_V1_STR}/chat", tags=["chat"])
 app.include_router(ws.router, prefix="/ws", tags=["websocket"])
+
 
 @app.on_event("startup")
 async def startup_event():

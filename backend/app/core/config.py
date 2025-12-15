@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
 
 import os
+from typing import Optional
 
 # Database
 # Use absolute path to ensure it works regardless of CWD (e.g. when run from Claude Desktop)
@@ -15,8 +16,14 @@ class Settings(BaseSettings):
     
     
     # Database
-    # Default to sqlite if DATABASE_URL not set (for safety), but expect Postgres
-    DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'brain_vault.db')}")
+    # Default to sqlite if not set in .env
+    DATABASE_URL: Optional[str] = None
+    
+    @property
+    def assemble_db_url(self) -> str:
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        return f"sqlite:///{os.path.join(BASE_DIR, 'brain_vault.db')}"
     
     # Vector DB (Pinecone)
     PINECONE_API_KEY: str = os.getenv("PINECONE_API_KEY", "")
@@ -27,11 +34,12 @@ class Settings(BaseSettings):
     CELERY_BROKER_URL: str = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 
     # LLM Keys
-    OPENAI_API_KEY: str = "OPENAI_API_KEY"
-    GEMINI_API_KEY: str = "GEMINI_API_KEY"
-    
+    OPENAI_API_KEY: Optional[str] = None
+    GOOGLE_API_KEY: Optional[str] = None
+    GEMINI_API_KEY: Optional[str] = None
+
     class Config:
-        env_file = ".env"
+        env_file = os.path.join(BASE_DIR, ".env")
         extra = "ignore"
 
 settings = Settings()
