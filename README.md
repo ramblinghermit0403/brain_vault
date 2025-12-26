@@ -8,7 +8,7 @@ Instead of losing context every time you switch between ChatGPT, Gemini, Claude,
 
 ## Demo
 
-[![Watch the demo](https://img.youtube.com/vi/7w0LObDVEyA/0.jpg)](https://youtu.be/7w0LObDVEyA)
+[![Watch the demo](https://img.youtube.com/vi/3lsy-Wnhj28/0.jpg)](https://youtu.be/3lsy-Wnhj28)
 
 ## The Problem
 
