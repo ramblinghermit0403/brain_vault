@@ -1,6 +1,6 @@
 <template>
   <div class="h-full flex flex-col">
-    <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800">
+    <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center ">
       <div>
         <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
@@ -8,7 +8,7 @@
         </h3>
         <p class="text-xs text-gray-400 mt-1">Your personal knowledge base.</p>
       </div>
-      <button @click="fetchDocuments" class="text-sm text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 font-medium">
+      <button @click="fetchDocuments" class="text-sm text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white font-medium">
         View All
       </button>
     </div>
@@ -26,9 +26,9 @@
          <li v-for="doc in paginatedDocuments" :key="doc.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150 group">
            <div class="px-6 py-4 flex items-center justify-between cursor-pointer" @click="editDocument(doc)">
              <div class="flex-1 min-w-0 pr-4">
-               <h4 class="text-base font-medium text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                 {{ doc.title || 'Untitled Document' }}
-               </h4>
+                <h4 class="text-base font-medium text-gray-900 dark:text-white truncate group-hover:text-black dark:group-hover:text-white transition-colors">
+                  {{ doc.title || 'Untitled Document' }}
+                </h4>
                <p class="text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5 line-clamp-1">
                  {{ doc.content ? doc.content.substring(0, 120) : (doc.source || 'No content preview') }}
                </p>
@@ -40,7 +40,7 @@
                     {{ doc.type === 'memory' ? 'MEM' : 'DOC' }}
                 </span>
                 -->
-                <button class="text-gray-300 group-hover:text-blue-500 dark:text-gray-600 dark:group-hover:text-blue-400 p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all">
+                <button class="text-gray-300 group-hover:text-black dark:text-gray-600 dark:group-hover:text-white p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-all">
                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                 </button>
              </div>
@@ -50,7 +50,7 @@
     </div>
     
     <!-- Pagination -->
-    <div v-if="filteredDocuments.length > 0" class="p-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800">
+    <div v-if="filteredDocuments.length > 0" class="p-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-surface">
         <span class="text-sm text-gray-500 dark:text-gray-400">
             Page {{ currentPage }} of {{ totalPages }}
         </span>

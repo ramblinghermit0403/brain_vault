@@ -13,21 +13,21 @@
               <nav class="-mb-px flex space-x-8">
                   <button 
                     @click="activeTab = 'general'"
-                    :class="activeTab === 'general' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-text-secondary dark:hover:text-gray-300'"
+                    :class="activeTab === 'general' ? 'border-black dark:border-white text-black dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-text-secondary dark:hover:text-gray-300'"
                     class="whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors"
                   >
                       General
                   </button>
                   <button 
                     @click="activeTab = 'integration'"
-                    :class="activeTab === 'integration' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-text-secondary dark:hover:text-gray-300'"
+                    :class="activeTab === 'integration' ? 'border-black dark:border-white text-black dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-text-secondary dark:hover:text-gray-300'"
                     class="whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors"
                   >
                       Integrations
                   </button>
                   <button 
                     @click="activeTab = 'data'"
-                    :class="activeTab === 'data' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-text-secondary dark:hover:text-gray-300'"
+                    :class="activeTab === 'data' ? 'border-black dark:border-white text-black dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-text-secondary dark:hover:text-gray-300'"
                     class="whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors"
                   >
                       Data & Export
@@ -64,8 +64,8 @@
                       </div>
                       <button 
                         @click="toggleAutoApprove" 
-                        :class="settings.auto_approve ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'" 
-                        class="relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        :class="settings.auto_approve ? 'bg-black dark:bg-white' : 'bg-gray-200 dark:bg-gray-700'" 
+                        class="relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black dark:focus:ring-white"
                       >
                         <span 
                           aria-hidden="true" 
@@ -107,8 +107,8 @@
                         <div class="flex flex-col">
                             <span class="font-medium text-gray-900 dark:text-text-primary capitalize">{{ key.provider }}</span>
                             <div class="flex gap-2 mt-0.5">
-                                <span v-if="key.permissions.read" class="text-[10px] uppercase font-bold tracking-wider text-green-600 dark:text-green-400">Read</span>
-                                <span v-if="key.permissions.write" class="text-[10px] uppercase font-bold tracking-wider text-blue-600 dark:text-blue-400">Write</span>
+                                <span v-if="key.permissions.read" class="text-[10px] uppercase font-bold tracking-wider text-black dark:text-white">Read</span>
+                                <span v-if="key.permissions.write" class="text-[10px] uppercase font-bold tracking-wider text-black dark:text-white">Write</span>
                             </div>
                         </div>
                       </div>
@@ -125,7 +125,7 @@
                       <div>
                         <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Provider</label>
                         <div class="relative">
-                            <select v-model="newKey.provider" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-text-primary appearance-none">
+                            <select v-model="newKey.provider" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-text-primary appearance-none">
                               <option value="openai">OpenAI</option>
                               <option value="anthropic">Anthropic</option>
                               <option value="gemini">Google Gemini</option>
@@ -137,22 +137,22 @@
                       </div>
                       <div>
                         <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">API Key</label>
-                        <input type="password" v-model="newKey.api_key" class="block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-text-primary py-2 px-3" placeholder="sk-..." />
+                        <input type="password" v-model="newKey.api_key" class="block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-text-primary py-2 px-3" placeholder="sk-..." />
                       </div>
                     </div>
                     
                     <div class="flex items-center gap-6 mb-6">
                        <label class="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" v-model="newKey.permissions.read" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600">
+                        <input type="checkbox" v-model="newKey.permissions.read" class="rounded border-gray-300 text-black shadow-sm focus:border-black focus:ring focus:ring-black focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600">
                         <span class="ml-2 text-sm text-gray-600 dark:text-gray-300">Allow Read</span>
                       </label>
                       <label class="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" v-model="newKey.permissions.write" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600">
+                        <input type="checkbox" v-model="newKey.permissions.write" class="rounded border-gray-300 text-black shadow-sm focus:border-black focus:ring focus:ring-black focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600">
                         <span class="ml-2 text-sm text-gray-600 dark:text-gray-300">Allow Write</span>
                       </label>
                     </div>
                     
-                    <button @click="addKey" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                    <button @click="addKey" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-black dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black dark:focus:ring-white transition-colors">
                         Connect Provider
                     </button>
                </div>
@@ -162,7 +162,7 @@
                   <p class="text-sm text-gray-500 dark:text-text-secondary mb-6">Use this token to log in to the Brain Vault extension.</p>
                   
                   <div class="flex items-center gap-4">
-                     <button @click="copyToken" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors">
+                     <button @click="copyToken" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white dark:text-black bg-black dark:bg-white hover:bg-gray-900 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black dark:focus:ring-white transition-colors">
                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
                        <span v-if="tokenCopied">Copied!</span>
                        <span v-else>Copy Token</span>
@@ -181,14 +181,14 @@
               
               <div class="flex space-x-4">
                 <button @click="exportData('json')" class="inline-flex items-center px-4 py-3 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors group">
-                  <svg class="w-8 h-8 mr-3 text-gray-400 group-hover:text-amber-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                  <svg class="w-8 h-8 mr-3 text-gray-400 group-hover:text-black dark:group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                   <div class="text-left">
                       <div class="text-xs text-gray-500 uppercase font-semibold">Format</div>
                       <div class="text-base font-bold">JSON</div>
                   </div>
                 </button>
                 <button @click="exportData('md')" class="inline-flex items-center px-4 py-3 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors group">
-                   <svg class="w-8 h-8 mr-3 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                   <svg class="w-8 h-8 mr-3 text-gray-400 group-hover:text-black dark:group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                   <div class="text-left">
                       <div class="text-xs text-gray-500 uppercase font-semibold">Format</div>
                       <div class="text-base font-bold">Markdown</div>
@@ -198,6 +198,15 @@
           </div>
       </div>
     </main>
+    
+    <ConfirmationModal
+      :is-open="showDeleteModal"
+      title="Remove Key"
+      message="Are you sure you want to remove this API key? This action cannot be undone."
+      confirm-text="Remove"
+      @confirm="confirmDeleteKey"
+      @cancel="showDeleteModal = false"
+    />
   </div>
 </template>
 
@@ -208,6 +217,7 @@ import { useRouter } from 'vue-router';
 import api from '../services/api';
 import NavBar from '../components/NavBar.vue';
 import ThemeToggle from '../components/ThemeToggle.vue';
+import ConfirmationModal from '../components/ConfirmationModal.vue';
 import { useToast } from 'vue-toastification';
 
 const authStore = useAuthStore();
@@ -266,15 +276,26 @@ const addKey = async () => {
   }
 };
 
-const deleteKey = async (id) => {
-  if (!confirm("Remove this key?")) return;
-  try {
-    await api.delete(`/user/llm-keys/${id}`);
-    toast.success("Key removed");
-    loadKeys();
-  } catch (err) {
-    toast.error("Failed to remove key");
-  }
+const keyToDelete = ref(null);
+const showDeleteModal = ref(false);
+
+const deleteKey = (id) => {
+  keyToDelete.value = id;
+  showDeleteModal.value = true;
+};
+
+const confirmDeleteKey = async () => {
+    if (!keyToDelete.value) return;
+    try {
+        await api.delete(`/user/llm-keys/${keyToDelete.value}`);
+        toast.success("Key removed");
+        loadKeys();
+    } catch (err) {
+        toast.error("Failed to remove key");
+    } finally {
+        showDeleteModal.value = false;
+        keyToDelete.value = null;
+    }
 };
 
 const exportData = async (format) => {

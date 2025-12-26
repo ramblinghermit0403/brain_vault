@@ -88,36 +88,7 @@ class MetadataExtractionService:
             if not metadata:
                 print("LLM returned no metadata")
 
-            # 5. Similarity / Duplicate Check
-            from app.services.vector_store import vector_store
-            
-            try:
-                sim_results = vector_store.query(
-                    record.content, 
-                    n_results=2, 
-                    where={"user_id": user_id}
-                )
-                
-                similarity_data = {}
-                if sim_results["documents"] and sim_results.get("distances"):
-                     best_distance = sim_results["distances"][0][0]
-                     best_metadata = sim_results["metadatas"][0][0] if sim_results["metadatas"] else {}
-                     
-                     source_id = best_metadata.get("memory_id")
-                     # Check distinct ID (simple check, implies memory_id field usage)
-                     if str(source_id) != str(memory_id):
-                         if best_distance < 0.6: 
-                            score = max(0, (1 - best_distance) * 100)
-                            similarity_data = {
-                                "score": round(score, 1),
-                                "source_title": best_metadata.get("title", "Unknown"),
-                                "source_id": source_id or best_metadata.get("document_id"),
-                                "type": best_metadata.get("type", "memory")
-                            }
-                            print(f"Similarity found: {similarity_data}")
-            except Exception as e:
-                print(f"Similarity check failed: {e}")
-                similarity_data = {}
+
 
 
             # 6. Update Record
@@ -136,17 +107,9 @@ class MetadataExtractionService:
             else:
                 print("Metadata Extraction: No tags to update")
             
-            if similarity_data:
-                import json
-                # Document model might not have task_type? Check model first.
-                if hasattr(record, 'task_type'):
-                    record.task_type = json.dumps(similarity_data) 
-                
-                current_tags = record.tags or []
-                if "similar-content" not in current_tags:
-                    new_tags = list(current_tags)
-                    new_tags.append("similar-content")
-                    record.tags = new_tags
+            if tags_updated:
+                # Update task_type only if JSON structure required for other things, else skip
+                pass
 
             # Commit is async
             await db.commit()

@@ -1,7 +1,7 @@
 <template>
   <button 
     @click="themeStore.toggleTheme()" 
-    class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200"
+    class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-colors duration-200"
     :title="themeStore.isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
   >
     <!-- Sun Icon -->

@@ -1,27 +1,108 @@
-# Brain Vault
+# MemWyre
 
-A 3-tier personal knowledge management system with AI-powered retrieval and universal LLM integration.
+Your Second Brain, Supercharged.
 
-## 🌟 Features
+MemWyre is a universal memory layer for AI—designed to capture, organize, and retrieve your knowledge across tools, conversations, and large language models.
 
-### Tier 1: Universal Prompt Engine
-- **Web-based prompt generator** with context retrieval
-- **Multiple templates**: Standard Q&A, Code Assistant, Summarization
-- **Token-aware compactor** to fit LLM context limits
-- **One-click copy** to paste into any LLM (ChatGPT, Claude, Gemini)
+Instead of losing context every time you switch between ChatGPT, Gemini, Claude, editors, or agents, MemWyre becomes the persistent brain that follows you everywhere.
 
-### Tier 2: Browser Extension
-- **Auto-inject** memory context into web LLMs
-- **Page clipper** to save web content to your vault
-- **Seamless authentication** via JWT token
-- **Supports**: ChatGPT, Claude, Gemini
+## Demo
 
-### Tier 3: MCP Server
-- **Model Context Protocol** integration for developer tools
-- **Tools exposed**: `search_memory`, `save_memory`, `get_document`
-- **Compatible with**: VS Code, Cursor, Claude Desktop, agent frameworks
+[![Watch the demo](https://img.youtube.com/vi/7w0LObDVEyA/0.jpg)](https://youtu.be/7w0LObDVEyA)
 
-## 🚀 Quick Start
+## The Problem
+
+Today’s AI tools are powerful—but stateless.
+Every chat starts from zero
+Important insights get lost in conversations
+Knowledge is scattered across PDFs, chats, docs, videos, and web pages
+Each LLM lives in its own silo
+Users are forced to re-explain themselves endlessly
+Existing tools solve storage or note-taking, but not memory continuity for AI.
+AI forgot. Again.
+
+## What MemWyre Solves
+
+MemWyre introduces a shared, intelligent memory system that sits outside any single LLM and works with all of them.
+
+It enables:
+Long-term memory for AI workflows
+Cross-LLM knowledge reuse
+Contextual retrieval grounded in your own data
+A clean separation between thinking (LLMs) and remembering (MemWyre)
+MemWyre doesn’t replace AI tools—it augments them.
+
+## Key Features
+### Unified Memory Vault
+
+Store everything in one place:
+
+Chat outputs
+Documents (PDF, DOC, Markdown)
+Web pages & research
+Notes, ideas, decisions
+Agent outputs
+
+All content is automatically processed, chunked, embedded, and indexed for semantic retrieval.
+
+### Smart Memory (Not Just Storage)
+
+MemWyre goes beyond dumping files:
+Semantic chunking
+Auto-generated embeddings
+Metadata & source tracking
+Context-aware retrieval
+Inbox-based memory approval flow
+Memory becomes queryable intelligence, not dead notes.
+
+### Contextual Retrieval Engine
+
+Ask questions and get answers grounded in your own memory, not hallucinations.
+
+Vector search
+Top-K relevance ranking
+Source-linked context
+Optional summaries
+
+Works as a standalone search or as context injected into LLM prompts.
+
+### LLM-Agnostic by Design
+
+MemWyre is not tied to any single model.
+It integrates via:
+API-based LLM connectors
+MCP servers (for editors & agents)
+Browser extensions
+Prompt-level injection (for restricted platforms)
+
+Your memory works across ChatGPT, Gemini, Claude, local models, and future agents.
+
+### Intelligent Memory Inbox
+
+Not all memory should be saved blindly.
+MemWyre introduces an Inbox model
+Review before committing to long-term memory
+Auto-approve trusted sources
+Manual control where it matters
+Prevents memory pollution
+
+This keeps the system useful, not noisy.
+
+### Multi-Source Ingestion
+
+Bring knowledge from everywhere:
+
+File uploads
+Browser extension
+Web scraping
+YouTube transcripts
+Agent outputs
+Code editor integrations
+
+All paths lead to the same memory engine.
+
+
+## Quick Start
 
 ### Prerequisites
 - Python 3.10+
@@ -59,7 +140,7 @@ Frontend runs at `http://localhost:5173`
 3. **Login** with your credentials
 4. Upload documents or create memories via the dashboard
 
-## 📖 Usage Guide
+## Usage Guide
 
 ### Tier 1: Prompt Generator
 
@@ -113,7 +194,7 @@ python backend/mcp_server.py
 - `save_memory(text, tags)` - Save new memories
 - `get_document(doc_id)` - Retrieve full document content
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 brain_vault/
@@ -138,7 +219,7 @@ brain_vault/
     └── popup.html
 ```
 
-## 🔧 Configuration
+## Configuration
 
 ### API Keys
 
@@ -156,7 +237,7 @@ SQLite database is created automatically at `backend/brain_vault.db`.
 
 ChromaDB stores embeddings at `backend/chroma_db/`.
 
-## 🧪 Testing
+## Testing
 
 ### Test MCP Server
 ```bash
@@ -170,13 +251,13 @@ python test_mcp_live.py
 2. Enter a test query
 3. Verify prompt is generated with context
 
-## 📝 API Documentation
+## API Documentation
 
 Once the backend is running, visit:
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 **Backend:**
 - FastAPI
@@ -195,15 +276,15 @@ Once the backend is running, visit:
 - Manifest V3
 - Chrome Extension APIs
 
-## 🤝 Contributing
+## Contributing
 
 This is a personal project, but suggestions are welcome via issues.
 
-## 📄 License
+## License
 
 MIT License - feel free to use and modify.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Built with assistance from Antigravity AI
 - MCP specification by Anthropic

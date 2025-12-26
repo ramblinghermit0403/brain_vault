@@ -4,9 +4,9 @@
 
     <div class="flex-1 w-full h-full relative cursor-move overflow-hidden">
       <!-- Legend (Positioned absolutely over graph) -->
-      <div class="absolute top-4 left-4 z-10 pointer-events-auto bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
+      <div class="absolute top-4 left-4 z-10 pointer-events-auto bg-white/80 dark:bg-surface/80 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
         <span class="flex items-center gap-2">
-          <span class="w-3 h-3 rounded-full bg-indigo-500"></span> Memory
+          <span class="w-3 h-3 rounded-full bg-black dark:bg-white"></span> Memory
           <span class="w-3 h-3 rounded-full bg-emerald-500 ml-2"></span> Tag
           <span class="w-3 h-3 rounded-full bg-gray-400 ml-2"></span> Document
         </span>
@@ -16,7 +16,7 @@
     <div ref="container" class="w-full h-full">
       <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 z-20 backdrop-blur-sm">
         <div class="flex flex-col items-center">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-black dark:border-white mb-4"></div>
           <p class="text-gray-500 dark:text-gray-400 animate-pulse">Mapping your brain...</p>
         </div>
       </div>
@@ -25,13 +25,13 @@
 
     <!-- Zoom Controls -->
     <div class="absolute bottom-6 right-6 flex flex-col gap-2 z-10">
-      <button @click="handleZoomIn" class="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+      <button @click="handleZoomIn" class="p-2 bg-white dark:bg-surface rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
       </button>
-      <button @click="handleZoomOut" class="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+      <button @click="handleZoomOut" class="p-2 bg-white dark:bg-surface rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" /></svg>
       </button>
-      <button @click="handleResetZoom" class="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" title="Reset View">
+      <button @click="handleResetZoom" class="p-2 bg-white dark:bg-surface rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" title="Reset View">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
       </button>
     </div>
@@ -177,12 +177,12 @@ const initGraph = async () => {
   };
 
   if (themeStore.isDark) {
-    createGradient("grad-memory", "#6366f1", "#4338ca"); // Indigo
-    createGradient("grad-tag", "#10b981", "#059669");    // Emerald
-    createGradient("grad-doc", "#9ca3af", "#4b5563");    // Gray
+    createGradient("grad-memory", "#ffffff", "#e5e5e5"); // White/Gray for nodes in dark mode
+    createGradient("grad-tag", "#d4d4d8", "#a1a1aa");    // Light Gray for tags
+    createGradient("grad-doc", "#9ca3af", "#4b5563");    // Gray for docs
   } else {
-    createGradient("grad-memory", "#818cf8", "#4f46e5");
-    createGradient("grad-tag", "#34d399", "#059669");
+    createGradient("grad-memory", "#000000", "#333333"); // Black/Dark Gray for nodes in light mode
+    createGradient("grad-tag", "#52525b", "#27272a");    // Dark Gray for tags
     createGradient("grad-doc", "#d1d5db", "#6b7280");
   }
 
@@ -273,7 +273,7 @@ const initGraph = async () => {
         if (l.source.id === d.id || l.target.id === d.id) {
           connectedNodeIds.add(l.source.id);
           connectedNodeIds.add(l.target.id);
-          return themeStore.isDark ? "#818cf8" : "#4f46e5";
+          return themeStore.isDark ? "#ffffff" : "#000000";
         }
         return themeStore.isDark ? "#4b5563" : "#e5e7eb";
       })
@@ -387,6 +387,6 @@ watch(() => themeStore.isDark, () => {
 .node:hover circle {
   stroke: #fff;
   stroke-width: 3px;
-  filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.5));
+  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.5));
 }
 </style>

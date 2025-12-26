@@ -2,7 +2,7 @@
 <html>
 
 <head>
-  <title>Brain Vault</title>
+  <title>MemWyre</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -11,15 +11,17 @@
   <!-- Login View -->
   <div id="login-view" class="hidden">
     <h2>Welcome Back</h2>
-    <input type="text" id="token-input" placeholder="Paste Extension Token here">
-    <button id="save-token">Connect to Brain Vault</button>
-    <p>Get your token from Brain Vault Settings.</p>
+    <p class="subtitle">Connect your Brain Vault.</p>
+
+    <!-- Input removed, replaced with direct login button -->
+    <button id="save-token">Login to MemWyre</button>
+    <p class="help-text">This will open a new tab to authenticate.</p>
   </div>
 
   <!-- Main App -->
   <div id="main-app" class="hidden">
     <div class="header">
-      <h1>Brain Vault</h1>
+      <h1>MemWyre</h1>
       <button id="logout-btn" class="logout">Logout</button>
     </div>
 
@@ -62,7 +64,7 @@
     </div>
   </div>
 
-  <script src="popup.js"></script>
+  <script src="popup.js" type="module"></script>
 </body>
 
 </html>

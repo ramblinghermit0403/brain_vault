@@ -37,6 +37,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         handleRequest(getMemories, request.data, sendResponse);
         return true;
     }
+    if (request.action === 'saveToken') {
+        chrome.storage.local.set({
+            token: request.token,
+            refreshToken: request.refreshToken,
+            user: request.user
+        }).then(() => {
+            sendResponse({ success: true });
+        });
+        return true;
+    }
 });
 
 async function handleRequest(handler, data, sendResponse) {

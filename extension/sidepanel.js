@@ -4,12 +4,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const mainApp = document.getElementById('main-app');
 
     // Login Elements
-    const tokenInput = document.getElementById('token-input');
+
     const saveTokenBtn = document.getElementById('save-token');
     const logoutBtn = document.getElementById('logout-btn');
 
     // Tabs
-    const tabs = document.querySelectorAll('.tab');
+    const tabs = document.querySelectorAll('.tab-segment');
     const views = document.querySelectorAll('.view');
 
     // Generate Elements
@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const genBtn = document.getElementById('gen-btn');
     const genResult = document.getElementById('gen-result');
     const genCopy = document.getElementById('gen-copy');
+    const modelParamsInput = document.getElementById('model-params'); // NEW
 
     // Save Elements
     const saveTitle = document.getElementById('save-title');
@@ -37,14 +38,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         showLogin();
     }
 
+    // Listen for token changes (Auto-update UI after login)
+    chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === 'local' && changes.token) {
+            if (changes.token.newValue) {
+                showMain();
+            } else {
+                showLogin();
+            }
+        }
+    });
+
     // --- Auth Handlers ---
 
-    saveTokenBtn.addEventListener('click', async () => {
-        const token = tokenInput.value.trim();
-        if (token) {
-            await chrome.storage.local.set({ token });
-            showMain();
-        }
+    saveTokenBtn.addEventListener('click', () => {
+        chrome.tabs.create({ url: 'http://localhost:5173/login?source=extension' });
     });
 
     logoutBtn.addEventListener('click', async () => {
@@ -80,8 +88,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Feature Handlers ---
 
     // 1. Generate Prompt
+    // 1. Generate Prompt
     genBtn.addEventListener('click', async () => {
         const query = genQuery.value.trim();
+        const modelParams = modelParamsInput ? modelParamsInput.value.trim() : '';
+
         if (!query) return;
 
         setLoading(genBtn, true, 'Generating...');
@@ -89,16 +100,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         genCopy.classList.add('hidden');
 
         try {
-            const response = await sendMessage('generatePrompt', { query });
+            // Send modelParams along with query
+            const response = await sendMessage('generatePrompt', { query, model_params: modelParams });
             if (response.success) {
                 genResult.textContent = response.data.prompt;
                 genResult.classList.remove('hidden');
                 genCopy.classList.remove('hidden');
             } else {
-                showError(genResult, response.error);
+                showToast(response.error, 'error');
             }
         } catch (err) {
-            showError(genResult, err.message);
+            showToast(err.message, 'error');
         } finally {
             setLoading(genBtn, false, 'Generate Prompt');
         }
@@ -106,8 +118,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     genCopy.addEventListener('click', () => {
         navigator.clipboard.writeText(genResult.textContent);
-        genCopy.textContent = 'Copied!';
-        setTimeout(() => genCopy.textContent = 'Copy to Clipboard', 2000);
+        showToast('Prompt copied to clipboard!');
     });
 
     // 2. Save Memory
@@ -125,15 +136,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (response.success) {
                 saveContent.value = '';
                 saveTitle.value = '';
-                saveStatus.textContent = 'Saved successfully!';
-                saveStatus.className = 'success';
+                showToast('Memory saved successfully!');
             } else {
-                saveStatus.textContent = 'Error: ' + response.error;
-                saveStatus.className = 'error';
+                showToast(response.error, 'error');
             }
         } catch (err) {
-            saveStatus.textContent = 'Error: ' + err.message;
-            saveStatus.className = 'error';
+            showToast(err.message, 'error');
         } finally {
             setLoading(saveBtn, false, 'Save to Memory');
         }
@@ -153,17 +161,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (response.success) {
                 renderResults(response.data);
             } else {
-                showError(searchResults, response.error);
+                showToast(response.error, 'error');
             }
         } catch (err) {
-            showError(searchResults, err.message);
+            showToast(err.message, 'error');
         } finally {
             setLoading(searchBtn, false, 'Search');
         }
     });
 
     // Fetch latest memories and files when Retrieve tab is clicked
-    document.querySelector('.tab[data-tab="search"]').addEventListener('click', async () => {
+    document.querySelector('.tab-segment[data-tab="search"]').addEventListener('click', async () => {
         searchResults.innerHTML = '<div class="status-msg">Loading latest items...</div>';
         searchResults.classList.remove('hidden');
 
@@ -214,10 +222,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     searchResults.innerHTML = '<div class="status-msg">No items found.</div>';
                 }
             } else {
-                showError(searchResults, response.error);
+                showToast(response.error, 'error');
             }
         } catch (err) {
-            showError(searchResults, err.message);
+            showToast(err.message, 'error');
         }
     });
 
@@ -256,9 +264,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             copyBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 navigator.clipboard.writeText(item.content);
-                const originalText = copyBtn.textContent;
-                copyBtn.textContent = 'Copied!';
-                setTimeout(() => copyBtn.textContent = originalText, 1500);
+                showToast('Copied to clipboard!'); // New Toast
             });
 
             container.appendChild(div);
@@ -280,9 +286,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         btn.textContent = text;
     }
 
+    // New Toast Function
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+
+        // Icon based on type
+        const icon = type === 'error' ? '❌' : 'ℹ️';
+        if (type === 'success') icon = '✅'; // Optional if used explicitly
+
+        toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+
+        container.appendChild(toast);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+            toast.style.animation = 'toastFadeOut 0.3s ease-out forwards';
+            setTimeout(() => {
+                if (container.contains(toast)) {
+                    container.removeChild(toast);
+                }
+            }, 300); // Wait for fade out
+        }, 3000);
+    }
+
+    // Deprecated but kept for compatibility logic updates above -> redirected to showToast
     function showError(el, msg) {
-        el.textContent = 'Error: ' + msg;
-        el.classList.remove('hidden');
-        el.classList.add('error'); // Ensure error styling if applicable
+        showToast(msg, 'error');
     }
 });

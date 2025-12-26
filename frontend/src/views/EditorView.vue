@@ -1,7 +1,5 @@
 <template>
   <div class="h-screen flex flex-col bg-gray-50 dark:bg-app transition-colors duration-300 font-sans overflow-hidden">
-    <!-- Global Nav -->
-    <NavBar />
 
     <!-- Editor Header (Title & Actions) -->
     <header class="h-16 shrink-0 border-b border-gray-200 dark:border-border flex items-center justify-between px-6 bg-white dark:bg-surface relative z-10">
@@ -10,11 +8,15 @@
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
           </button>
           <div class="flex items-center gap-3 w-full max-w-2xl">
-              <span class="text-lg font-bold text-gray-900 dark:text-text-primary whitespace-nowrap">Edit Memory</span>
+              <span class="text-lg font-bold text-gray-900 dark:text-text-primary whitespace-nowrap">
+                {{ isViewMode ? 'View Memory' : (documentId === 'new' ? 'New Memory' : 'Edit Memory') }}
+              </span>
               <div class="h-6 w-px bg-gray-200 dark:bg-gray-600"></div>
               <input 
                 v-model="title" 
+                :readonly="isViewMode"
                 class="bg-transparent border border-transparent focus:border-gray-300 dark:focus:border-gray-600 hover:border-gray-200 dark:hover:border-gray-700 rounded px-2 py-1 text-sm text-gray-600 dark:text-gray-300 w-full transition-colors"
+                :class="{ 'cursor-default': isViewMode }"
                 placeholder="Document Title"
               />
           </div>
@@ -37,18 +39,34 @@
            >
              Approve
            </button>
-           <button 
-             @click="saveDocument"
-             :disabled="saving"
-             class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
-           >
-             Save Changes
-           </button>
+            <button 
+              v-if="isViewMode"
+              @click="isViewMode = false"
+              class="px-4 py-2 bg-black dark:bg-white text-white dark:text-black text-sm font-medium rounded-md transition-colors hover:bg-gray-900 dark:hover:bg-gray-200"
+            >
+              Edit
+            </button>
+            <button 
+              v-if="!isViewMode"
+              @click="saveDocument"
+              :disabled="saving"
+              class="px-4 py-2 bg-black dark:bg-white text-white dark:text-black text-sm font-medium rounded-md transition-colors hover:bg-gray-900 dark:hover:bg-gray-200"
+            >
+              Save Changes
+            </button>
+            <button 
+              v-if="!isViewMode && documentId !== 'new'"
+              @click="isViewMode = true"
+              class="px-4 py-2 border border-gray-200 dark:border-border text-gray-600 dark:text-text-secondary text-sm font-medium rounded-md transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              Cancel
+            </button>
        </div>
     </header>
 
     <!-- Toolbar (Functional) -->
-    <div class="h-10 shrink-0 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-surface/50 flex items-center px-6 gap-4 overflow-x-auto">
+    <div class="h-10 shrink-0 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-surface/50 flex items-center px-6 gap-4 overflow-x-auto"
+         :class="{ 'opacity-50 pointer-events-none grayscale': isViewMode }">
         <div class="flex items-center gap-1 text-gray-500 dark:text-text-secondary">
             <button @click="insertText('**', '**')" class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors" title="Bold (Markdown **)">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6V4zm0 8h9a5 5 0 015 5 5 5 0 01-5 5H6v-10z" /></svg>
@@ -80,60 +98,117 @@
           </div>
     </div>
 
-    <!-- Main Editor Area with Padding to look like a document -->
-    <div class="flex-1 bg-gray-50 dark:bg-app overflow-y-auto p-4 sm:p-8 flex justify-center">
-        <div class="w-full max-w-4xl bg-white dark:bg-surface shadow-sm border border-gray-100 dark:border-border rounded-xl min-h-[600px] flex flex-col p-8 sm:p-12 relative">
-            <vue-monaco-editor
-              v-model:value="content"
-              theme="vs-light"
-              :options="editorOptions"
-              @mount="handleEditorMount"
-              language="markdown"
-              class="h-full w-full min-h-[500px]"
-            />
-        </div>
-    </div>
-
-    <!-- Tags Footer -->
-    <div class="shrink-0 bg-white dark:bg-surface border-t border-gray-200 dark:border-border p-4 px-6 sm:px-8">
-        <div class="max-w-4xl mx-auto w-full relative">
-            <div class="flex justify-between items-center mb-2">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tags</label>
-                <button 
-                  @click="generateTags" 
-                  :disabled="generatingTags || !content"
-                  class="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-                >
-                    <svg v-if="generatingTags" class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    <svg v-else class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
-                    {{ generatingTags ? 'Thinking...' : 'Auto-Tag with AI' }}
-                </button>
+    <!-- Main Content Area with Absolute Centering and Fixed Sidebar -->
+    <div class="flex-1 overflow-hidden bg-gray-50 dark:bg-app relative flex flex-col">
+        <!-- Main Document Container - Absolutely Centered -->
+        <div class="w-full h-full overflow-y-auto flex justify-center p-4 sm:p-8">
+             <div class="w-full max-w-4xl bg-white dark:bg-surface shadow-sm border border-gray-100 dark:border-border rounded-xl min-h-[calc(100vh-8rem)] flex flex-col p-8 sm:p-12 relative h-fit mb-12">
+                <vue-monaco-editor
+                  v-model:value="content"
+                  theme="vs-light"
+                  :options="editorOptions"
+                  @mount="handleEditorMount"
+                  language="markdown"
+                  class="h-full w-full min-h-[500px]"
+                />
             </div>
-            <input 
-              v-model="tags" 
-              @input="handleTagInput"
-              @blur="hideSuggestionsWithDelay"
-              @keydown.down.prevent="navigateSuggestions(1)"
-              @keydown.up.prevent="navigateSuggestions(-1)"
-              @keydown.enter.prevent="selectActiveSuggestion"
-              class="w-full border border-gray-200 dark:border-border rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 outline-none transition-shadow bg-gray-50 dark:bg-app"
-              placeholder="project-alpha, onboarding, strategy"
-            />
-            
-            <!-- Tag Suggestions -->
-            <div v-if="filteredSuggestions.length > 0 && showSuggestions" class="absolute bottom-full mb-1 left-0 w-full max-w-sm bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
-                <div 
-                  v-for="(suggestion, index) in filteredSuggestions" 
-                  :key="suggestion"
-                  @click="addTag(suggestion)"
-                  :class="['px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200', activeSuggestionIndex === index ? 'bg-blue-50 dark:bg-blue-900/30' : '']"
-                >
-                    #{{ suggestion }}
+        </div>
+
+        <!-- Fixed Right Sidebar -->
+        <aside class="w-72 fixed right-0 top-16 bottom-0 overflow-y-auto border-l border-gray-100 dark:border-border bg-white dark:bg-surface hidden lg:block z-20 shadow-[min(0px)_0px_0px_0px_rgba(0,0,0,0.1)]">
+             <div class="p-8 space-y-8">
+                 <!-- Metadata Section -->
+                <div>
+                    <h4 class="text-[11px] font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider mb-6 pb-2 border-b border-gray-100 dark:border-gray-800">Properties</h4>
+                    <div class="space-y-5">
+                        <div class="grid grid-cols-[80px_1fr] items-center gap-2">
+                            <label class="text-[11px] text-gray-500 font-medium">Created</label>
+                            <p class="text-xs text-gray-900 dark:text-gray-200 font-medium truncate">{{ formatDate(docMetadata.created_at) }}</p>
+                        </div>
+                        <div class="grid grid-cols-[80px_1fr] items-center gap-2">
+                            <label class="text-[11px] text-gray-500 font-medium">Source</label>
+                            <div>
+                                <span class="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-medium bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+                                    {{ docMetadata.source_llm || 'User' }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-[80px_1fr] items-center gap-2">
+                             <label class="text-[11px] text-gray-500 font-medium">Status</label>
+                             <div class="flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full" :class="docMetadata.status === 'approved' ? 'bg-green-500' : 'bg-yellow-500'"></span>
+                                <span class="text-xs font-medium capitalize" :class="docMetadata.status === 'approved' ? 'text-green-700 dark:text-green-400' : 'text-yellow-700 dark:text-yellow-400'">
+                                    {{ docMetadata.status || 'Active' }}
+                                </span>
+                             </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
+
+                <!-- Tags Section -->
+                <div>
+                    <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-100 dark:border-gray-800">
+                        <h4 class="text-[11px] font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider">Tags</h4>
+                         <button 
+                          @click="generateTags" 
+                          :disabled="generatingTags || !content || isViewMode"
+                          class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-indigo-600 dark:text-indigo-400 disabled:opacity-30 disabled:hover:bg-transparent"
+                          title="Auto-generate tags"
+                        >
+                             <svg v-if="generatingTags" class="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                        </button>
+                    </div>
+
+                    <!-- View Mode Tags -->
+                    <div v-if="isViewMode" class="flex flex-wrap gap-2">
+                        <span v-for="tag in docMetadata.tags" :key="tag" class="px-2.5 py-1 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-md text-[11px] font-medium border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors">
+                            #{{ tag }}
+                        </span>
+                        <span v-if="!docMetadata.tags || !docMetadata.tags.length" class="text-[11px] text-gray-400 italic px-1">No tags added</span>
+                    </div>
+
+                    <!-- Edit Mode Tags Input -->
+                    <div v-else class="space-y-3">
+                        <div class="relative group">
+                            <textarea 
+                              v-model="tags" 
+                              @input="handleTagInput"
+                              @blur="hideSuggestionsWithDelay"
+                              @keydown.down.prevent="navigateSuggestions(1)"
+                              @keydown.up.prevent="navigateSuggestions(-1)"
+                              @keydown.enter.prevent="selectActiveSuggestion"
+                              class="w-full bg-gray-50 dark:bg-app border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2.5 text-xs focus:ring-1 focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600 resize-none h-28 leading-relaxed"
+                              placeholder="Enter tags separated by commas..."
+                            ></textarea>
+                            
+                             <!-- Tag Suggestions -->
+                            <div v-if="filteredSuggestions.length > 0 && showSuggestions" class="absolute bottom-full left-0 w-full mb-1 bg-white dark:bg-surface border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto overflow-x-hidden">
+                                <div 
+                                  v-for="(suggestion, index) in filteredSuggestions" 
+                                  :key="suggestion"
+                                  @click="addTag(suggestion)"
+                                   :class="['px-3 py-2 text-xs cursor-pointer transition-colors border-b border-gray-50 dark:border-gray-800 last:border-0', activeSuggestionIndex === index ? 'bg-gray-100 dark:bg-gray-800 text-black dark:text-white font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800']"
+                                >
+                                    #{{ suggestion }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+             </div>
+        </aside>
     </div>
 
+
+    <ConfirmationModal
+      :is-open="showDeleteModal"
+      title="Delete Memory"
+      message="Are you sure you want to delete this memory? This cannot be undone."
+      confirm-text="Delete"
+      @confirm="confirmDeleteDocument"
+      @cancel="showDeleteModal = false"
+    />
   </div>
 </template>
 
@@ -141,13 +216,16 @@
 import { ref, computed, onMounted, onUnmounted, shallowRef } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { VueMonacoEditor } from '@guolao/vue-monaco-editor';
+import { useToast } from 'vue-toastification';
 import api from '../services/api';
 import { useThemeStore } from '../stores/theme';
 import NavBar from '../components/NavBar.vue';
+import ConfirmationModal from '../components/ConfirmationModal.vue';
 
 const route = useRoute();
 const router = useRouter();
 const themeStore = useThemeStore();
+const toast = useToast();
 
 const isInboxItem = ref(false);
 
@@ -161,7 +239,9 @@ const activeSuggestionIndex = ref(-1);
 
 const saving = ref(false);
 const lastSaved = ref(null);
+const isViewMode = ref(route.params.id !== 'new');
 const documentId = computed(() => route.params.id);
+const docMetadata = ref({});
 const editorInstance = shallowRef(null);
 
 const fetchTags = async () => {
@@ -191,11 +271,11 @@ const generateTags = async () => {
             const newTags = [...new Set([...currentTags, ...suggested])];
             tags.value = newTags.join(', ') + ', ';
         } else {
-            // toast.info('No new tags suggested'); // Toast not imported here, relying on button state visual
+            toast.info('No new tags suggested');
         }
     } catch (e) {
         console.error('Auto-tag failed', e);
-        alert('Failed to generate tags. Please check your API key in Settings.');
+        toast.error('Failed to generate tags. Please check your API key in Settings.');
     } finally {
         generatingTags.value = false;
     }
@@ -264,6 +344,7 @@ const editorOptions = computed(() => ({
       horizontal: 'hidden'
   },
   scrollBeyondLastLine: false,
+  readOnly: isViewMode.value,
 }));
 
 const handleEditorMount = (editor) => {
@@ -300,10 +381,10 @@ const fetchDocument = async () => {
     let found = false;
     try {
         const response = await api.get('/memory/');
-        let doc = response.data.find(d => d.id === documentId.value);
+        let doc = response.data.find(d => String(d.id) === String(documentId.value));
         if (!doc) {
-           const numericId = documentId.value.split('_').pop();
-           doc = response.data.find(d => d.id.endsWith(`_${numericId}`));
+           const numericId = String(documentId.value).split('_').pop();
+           doc = response.data.find(d => String(d.id).endsWith(`_${numericId}`));
         }
         
         if (doc) {
@@ -311,6 +392,12 @@ const fetchDocument = async () => {
             title.value = doc.title;
             content.value = doc.content || '';
             tags.value = Array.isArray(doc.tags) ? doc.tags.join(', ') : (doc.tags || '');
+            docMetadata.value = {
+                created_at: doc.created_at,
+                source_llm: doc.source_llm,
+                status: doc.status,
+                tags: doc.tags
+            };
             isInboxItem.value = false;
             found = true;
         }
@@ -326,6 +413,12 @@ const fetchDocument = async () => {
                 title.value = doc.details || 'Untitled';
                 content.value = doc.content || '';
                 tags.value = Array.isArray(doc.tags) ? doc.tags.join(', ') : (doc.tags || '');
+                docMetadata.value = {
+                    created_at: doc.created_at,
+                    source_llm: doc.source_llm,
+                    status: 'pending',
+                    tags: doc.tags
+                };
                 isInboxItem.value = true;
                 found = true;
             }
@@ -373,9 +466,13 @@ const saveDocument = async () => {
           });
       }
     }
+    toast.success('Memory saved successfully');
     lastSaved.value = new Date().toLocaleTimeString();
+    isViewMode.value = true;
+    fetchDocument(); // Refresh metadata
   } catch (error) {
     console.error('Error saving document:', error);
+    toast.error('Failed to save memory');
   } finally {
     saving.value = false;
   }
@@ -386,30 +483,47 @@ const approveDocument = async () => {
     try {
         const targetId = resolvedId.value || documentId.value;
         await api.post(`/inbox/${targetId}/action`, { action: 'approve' });
+        toast.success('Document approved');
         router.push('/inbox');
     } catch (e) {
         console.error('Failed to approve', e);
-        alert('Failed to approve document');
+        toast.error('Failed to approve document');
     }
 };
+
+const showDeleteModal = ref(false);
 
 const deleteDocument = async () => {
   if (documentId.value === 'new') {
     router.push('/');
     return;
   }
-  
-  if (!confirm('Are you sure you want to delete this memory? This cannot be undone.')) return;
+  showDeleteModal.value = true;
+};
 
+const confirmDeleteDocument = async () => {
   try {
     const targetId = resolvedId.value || documentId.value;
     // Handle 'mem_' prefix if present in ID but API expects int, or vice versa.
     // Usually API takes the ID passed.
     await api.delete(`/memory/${targetId}`);
+    toast.success('Document deleted');
     router.push('/');
   } catch (error) {
     console.error('Error deleting document:', error);
-    alert('Failed to delete document'); // Simple feedback
+    toast.error('Failed to delete document'); // Simple feedback
+  } finally {
+    showDeleteModal.value = false;
+  }
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'Unknown';
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  } catch (e) {
+    return 'Invalid Date';
   }
 };
 

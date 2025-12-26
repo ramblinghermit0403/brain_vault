@@ -4,6 +4,8 @@ from app.core.config import settings
 from app.routers import auth, retrieval, llm, documents, memory, export, prompts, llm_api, inbox, user_keys, ws, settings as user_settings, feedback, chat_api
 from app.db.base import Base
 from app.db.session import engine
+import app.models # Register models
+
 
 # Create tables (Async)
 # Base.metadata.create_all(bind=engine) -> Moved to startup event

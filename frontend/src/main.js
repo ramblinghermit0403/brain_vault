@@ -11,6 +11,10 @@ const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
-app.use(Toast)
+app.use(Toast, {
+    position: "bottom-right",
+    timeout: 3000,
+    toastClassName: "brain-vault-toast",
+})
 
 app.mount('#app')

@@ -1,5 +1,9 @@
 <script setup>
 import { RouterView } from 'vue-router'
+import { useThemeStore } from './stores/theme'
+
+// Initialize theme store to ensure dark mode preference persists on reload
+const themeStore = useThemeStore()
 </script>
 
 <template>

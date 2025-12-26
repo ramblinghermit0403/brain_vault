@@ -17,7 +17,7 @@ from app.services.vector_store import vector_store
 from app.services.ingestion import ingestion_service
 from app.services.metadata_extraction import metadata_service
 from app.db.session import AsyncSessionLocal
-from app.worker import process_memory_metadata_task, ingest_memory_task
+from app.worker import process_memory_metadata_task, ingest_memory_task, dedupe_memory_task
 
 
 router = APIRouter()
@@ -144,6 +144,9 @@ async def create_memory(
             memory_in.tags,
             "user"
         )
+
+    # Trigger Dedupe Job (Background Celery)
+    dedupe_memory_task.delay(memory.id)
     
     return memory
 

@@ -14,7 +14,7 @@
           v-for="action in actions" 
           :key="action.label"
           @click="handleAction(action)"
-          class="flex items-center gap-3 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-700 whitespace-nowrap group"
+          class="flex items-center gap-3 px-4 py-2 bg-white dark:bg-surface text-gray-700 dark:text-gray-200 rounded-lg shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-700 whitespace-nowrap group"
         >
           <span class="text-sm font-medium">{{ action.label }}</span>
           <div class="p-2 rounded-full text-gray-700 dark:text-gray-200">
@@ -27,7 +27,7 @@
     <!-- Main Toggle Button -->
     <button 
       @click="isOpen = !isOpen"
-      :class="['flex items-center justify-center w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-900', isOpen ? 'rotate-45' : '']"
+      :class="['flex items-center justify-center w-14 h-14 bg-black dark:bg-white text-white dark:text-black rounded-full shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-black/30 dark:focus:ring-white/30', isOpen ? 'rotate-45' : '']"
     >
       <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
     </button>
@@ -67,42 +67,42 @@ const actions = [
     color: 'bg-teal-500', 
     handler: () => emit('open-review')
   },
-  { 
-    label: 'Upload Document', 
-    icon: UploadIcon, 
-    color: 'bg-green-500', 
-    handler: () => {
-       const uploadSection = document.querySelector('h3');
-       // Simple heuristic to find file upload or just use scroll 
-       // Better: Just focus input? No file input depends on component.
-       // Let's just create a ref in dashboard later if needed? 
-       // For now scroll to top as fallback or just nothing if not found.
-       // Wait, "triggerUploadFocus" in previous code was mostly placeholder.
-       // Let's make it trigger the file input click if possible? 
-       // Implemented: Try to find the file input from the Floating Action.
-       // Actually simpler: Scroll to the dashboard grid?
-       // Let's stick to router pushes for now except Upload.
-       document.querySelector('input[type="file"]')?.click();
-    } 
-  },
-  { 
-    label: 'Organize Tags', 
-    icon: TagIcon, 
-    color: 'bg-purple-500', 
-    handler: () => router.push('/settings') 
-  },
+  // { 
+  //   label: 'Upload Document', 
+  //   icon: UploadIcon, 
+  //   color: 'bg-green-500', 
+  //   handler: () => {
+  //      const uploadSection = document.querySelector('h3');
+  //      // Simple heuristic to find file upload or just use scroll 
+  //      // Better: Just focus input? No file input depends on component.
+  //      // Let's just create a ref in dashboard later if needed? 
+  //      // For now scroll to top as fallback or just nothing if not found.
+  //      // Wait, "triggerUploadFocus" in previous code was mostly placeholder.
+  //      // Let's make it trigger the file input click if possible? 
+  //      // Implemented: Try to find the file input from the Floating Action.
+  //      // Actually simpler: Scroll to the dashboard grid?
+  //      // Let's stick to router pushes for now except Upload.
+  //      document.querySelector('input[type="file"]')?.click();
+  //   } 
+  // },
+  // { 
+  //   label: 'Organize Tags', 
+  //   icon: TagIcon, 
+  //   color: 'bg-purple-500', 
+  //   handler: () => router.push('/settings') 
+  // },
   { 
     label: 'Review Inbox', 
     icon: InboxIcon, 
     color: 'bg-orange-500', 
     handler: () => router.push('/inbox') 
   },
-  { 
-    label: 'New Memory', 
-    icon: PlusIcon, 
-    color: 'bg-blue-600', 
-    handler: () => router.push('/editor/new') 
-  },
+  // { 
+  //   label: 'New Memory', 
+  //   icon: PlusIcon, 
+  //   color: 'bg-black dark:bg-surface', 
+  //   handler: () => router.push('/editor/new') 
+  // },
 ];
 
 const handleAction = (action) => {

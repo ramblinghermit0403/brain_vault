@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Brain Vault Extension",
+  "name": "MemWyre Extension",
   "version": "1.0",
-  "description": "Inject your Brain Vault memory into any LLM.",
+  "description": "Inject your MemWyre memory into any LLM.",
   "permissions": [
     "activeTab",
     "scripting",
@@ -16,7 +16,7 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Open Brain Vault"
+    "default_title": "Open Wyre"
   },
   "side_panel": {
     "default_path": "sidepanel.html"
@@ -34,6 +34,22 @@
       "css": [
         "styles.css"
       ]
+    },
+    {
+      "matches": [
+        "http://localhost:5173/*",
+        "https://*.memwyre.com/*"
+      ],
+      "js": [
+        "auth_relay.js"
+      ]
     }
-  ]
+  ],
+  "externally_connectable": {
+    "matches": [
+      "http://localhost:5173/*",
+      "http://localhost:8000/*",
+      "https://*.memwyre.com/*"
+    ]
+  }
 }

@@ -54,6 +54,18 @@ const router = createRouter({
             path: '/map',
             name: 'map',
             component: () => import('../views/MemoryMapView.vue')
+        },
+        {
+            path: '/chat',
+            name: 'chat',
+            component: () => import('../views/ChatView.vue'),
+            meta: { requiresAuth: true }
+        },
+        {
+            path: '/chat/:id',
+            name: 'chat-session',
+            component: () => import('../views/ChatView.vue'),
+            meta: { requiresAuth: true }
         }
     ]
 });
@@ -63,7 +75,10 @@ router.beforeEach((to, from, next) => {
 
     // If accessing a protected route and not authenticated, redirect to login
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-        next('/login');
+        next({
+            path: '/login',
+            query: { redirect: to.fullPath }
+        });
     }
     // If accessing landing page (root) and already authenticated, redirect to dashboard
     else if (to.path === '/' && authStore.isAuthenticated) {

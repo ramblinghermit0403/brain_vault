@@ -25,13 +25,18 @@
                      @click="selectItem(item)"
                      :class="['p-4 rounded-lg border cursor-pointer transition-all hover:shadow-sm', 
                               selectedItem?.id === item.id 
-                                ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800' 
-                                : 'bg-white border-gray-200 dark:bg-surface-2 dark:border-border hover:border-blue-300 dark:hover:border-blue-700']"
+                                ? 'bg-gray-100 border-gray-300 dark:bg-surface-2 dark:border-gray-500' 
+                                : 'bg-white border-gray-200 dark:bg-surface-2 dark:border-border hover:border-black dark:hover:border-white']"
                    >
                        <h3 class="font-medium text-gray-900 dark:text-text-primary mb-1 line-clamp-2">{{ item.details }}</h3>
                        <div class="flex justify-between items-end mt-2">
                            <div class="flex flex-col gap-1">
-                               <span class="text-xs text-gray-500 dark:text-text-secondary">{{ item.source || 'Unknown Source' }}</span>
+                               <span class="text-xs text-gray-500 dark:text-text-secondary">
+                                   {{ item.source === 'agent_drop' ? 'External AI' : (item.source || 'Unknown Source') }}
+                               </span>
+                               <span v-if="item.source === 'agent_drop'" class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium w-fit bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600">
+                                   Unverified
+                               </span>
                                <span :class="['inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium w-fit', item.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200']">
                                    {{ item.status === 'approved' ? 'Approved' : 'Pending' }}
                                </span>
@@ -80,7 +85,7 @@
                                      v-model="newTagInput"
                                      @keydown.enter="addNewTag"
                                      placeholder="+ Add tag" 
-                                     class="text-xs px-2 py-1 rounded-full border border-gray-200 dark:border-gray-600 bg-transparent text-gray-600 dark:text-gray-300 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 w-24 transition-all"
+                                     class="text-xs px-2 py-1 rounded-full border border-gray-200 dark:border-gray-600 bg-transparent text-gray-600 dark:text-gray-300 focus:outline-none focus:border-black dark:focus:border-white focus:ring-1 focus:ring-black dark:focus:ring-white w-24 transition-all"
                                    />
                                </div>
                            </div>
@@ -89,7 +94,12 @@
                        <div class="flex items-center gap-6 text-sm text-gray-500 dark:text-text-secondary">
                            <div class="flex flex-col">
                                <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Source</span>
-                               <span>{{ selectedItem.source || 'Direct Entry' }}</span>
+                               <div class="flex items-center gap-2">
+                                   <span>{{ selectedItem.source === 'agent_drop' ? 'External AI Agent' : (selectedItem.source || 'Direct Entry') }}</span>
+                                   <span v-if="selectedItem.source === 'agent_drop'" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 border border-red-100 dark:border-red-900/30">
+                                       Unverified
+                                   </span>
+                               </div>
                            </div>
                            <div class="flex flex-col">
                                <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Received</span>
@@ -124,7 +134,7 @@
                        <button 
                          @click="approveItem(selectedItem)"
                          :disabled="selectedItem.status === 'approved'"
-                         :class="['px-4 py-2 text-white text-sm font-medium rounded-lg shadow-sm flex items-center gap-2 min-w-[100px] justify-center', selectedItem.status === 'approved' ? 'bg-green-600 cursor-default' : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500']"
+                          :class="['px-4 py-2 text-white text-sm font-medium rounded-lg shadow-sm flex items-center gap-2 min-w-[100px] justify-center', selectedItem.status === 'approved' ? 'bg-green-600 cursor-default' : 'bg-black dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black dark:focus:ring-white']"
                        >
                          {{ selectedItem.status === 'approved' ? 'Approved' : 'Approve' }}
                        </button>
@@ -142,6 +152,15 @@
            </div>
        </div>
     </main>
+
+    <ConfirmationModal
+      :is-open="showDismissModal"
+      title="Dismiss Item"
+      message="Dismiss this item from inbox? This will remove it from pending tasks but keep it in the vault if already saved."
+      confirm-text="Dismiss"
+      @confirm="confirmDismissItem"
+      @cancel="showDismissModal = false"
+    />
   </div>
 </template>
 
@@ -151,6 +170,7 @@ import { useInboxStore } from '../stores/inbox';
 import { useRouter } from 'vue-router';
 import api from '../services/api';
 import NavBar from '../components/NavBar.vue';
+import ConfirmationModal from '../components/ConfirmationModal.vue';
 import { useToast } from 'vue-toastification';
 
 const store = useInboxStore();
@@ -246,17 +266,27 @@ const startEditing = (item) => {
     router.push(`/editor/${item.id}`);
 };
 
-const dismissItem = async (item) => {
-    if (confirm('Dismiss this item from inbox?')) {
-        try {
-            await store.handleAction(item.id, 'dismiss');
-            toast.success('Item dismissed');
-            if (selectedItem.value?.id === item.id) {
-                selectedItem.value = store.items.length > 0 ? store.items[0] : null;
-            }
-        } catch (e) {
-            toast.error('Failed to dismiss item');
+const itemToDismiss = ref(null);
+const showDismissModal = ref(false);
+
+const dismissItem = (item) => {
+    itemToDismiss.value = item;
+    showDismissModal.value = true;
+};
+
+const confirmDismissItem = async () => {
+    if (!itemToDismiss.value) return;
+    try {
+        await store.handleAction(itemToDismiss.value.id, 'dismiss');
+        toast.success('Item dismissed');
+        if (selectedItem.value?.id === itemToDismiss.value.id) {
+            selectedItem.value = store.items.length > 0 ? store.items[0] : null;
         }
+    } catch (e) {
+        toast.error('Failed to dismiss item');
+    } finally {
+        showDismissModal.value = false;
+        itemToDismiss.value = null;
     }
 };
 

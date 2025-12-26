@@ -1,5 +1,5 @@
 <template>
-  <div :class="['flex flex-col h-full bg-white dark:bg-gray-800 transition-all duration-200', !embedded ? 'shadow-lg rounded-xl border border-gray-100 dark:border-gray-700' : '']">
+  <div :class="['flex flex-col h-full bg-white dark:bg-surface transition-all duration-200', !embedded ? 'shadow-lg rounded-xl border border-gray-100 dark:border-gray-700' : '']">
     
     <!-- Header (only if not embedded) -->
     <div v-if="!embedded" class="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center">
@@ -68,7 +68,7 @@
         <div v-if="context && context.length" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 border-dashed">
             <p class="text-xs text-gray-400 mb-2 font-medium">Sources:</p>
             <div class="space-y-2">
-                <div v-for="(ctx, idx) in context.slice(0, 2)" :key="idx" class="text-[10px] bg-white dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700 text-gray-500 truncate">
+                <div v-for="(ctx, idx) in context.slice(0, 2)" :key="idx" class="text-[10px] bg-white dark:bg-surface p-2 rounded border border-gray-100 dark:border-gray-700 text-gray-500 truncate">
                     {{ ctx }}
                 </div>
             </div>

@@ -1,15 +1,15 @@
 <template>
   <div class="min-h-screen flex bg-white font-sans">
     <!-- Left Side: Visual/Branding -->
-    <div class="hidden lg:flex w-1/2 bg-indigo-600 relative overflow-hidden items-center justify-center">
+    <div class="hidden lg:flex w-1/2 bg-black dark:bg-white relative overflow-hidden items-center justify-center">
         <!-- Abstract Background Pattern -->
         <div class="absolute inset-0 opacity-20">
             <svg class="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                 <path d="M0 100 L100 0 L100 100 Z" fill="url(#grad2)" />
                 <defs>
                     <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
-                         <stop offset="0%" style="stop-color:#4338ca;stop-opacity:1" />
-                        <stop offset="100%" style="stop-color:#6366f1;stop-opacity:1" />
+                         <stop offset="0%" stop-color="#000000" stop-opacity="1" />
+                        <stop offset="100%" stop-color="#333333" stop-opacity="1" />
                     </linearGradient>
                 </defs>
             </svg>
@@ -19,13 +19,11 @@
         <div class="relative z-10 text-center px-12 max-w-xl">
              <div class="mb-8 flex justify-center">
                  <div class="h-16 w-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30 shadow-xl">
-                    <svg class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                    </svg>
+                    <img src="/image.svg" alt="MemWyre" class="h-10 w-10 object-contain" />
                  </div>
             </div>
-            <h2 class="text-4xl font-extrabold text-white mb-6 leading-tight">Start Your Knowledge Journey</h2>
-            <p class="text-lg text-indigo-100 font-light">Join thousands of users who are organizing their minds and boosting their productivity with Brain Vault.</p>
+            <h2 class="text-4xl font-extrabold text-white dark:text-black mb-6 leading-tight">Start Your Knowledge Journey</h2>
+            <p class="text-lg text-gray-300 dark:text-gray-600 font-light">Join thousands of users who are organizing their minds and boosting their productivity with MemWyre.</p>
         </div>
     </div>
 
@@ -33,10 +31,8 @@
     <div class="w-full lg:w-1/2 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
       <div class="max-w-md w-full space-y-8">
         <div class="text-center">
-          <div class="lg:hidden mx-auto h-12 w-12 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
-               <svg class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-              </svg>
+          <div class="lg:hidden mx-auto h-12 w-12 bg-gray-100 dark:bg-surface rounded-full flex items-center justify-center mb-4">
+                <img src="/image.svg" alt="MemWyre" class="h-8 w-8 object-contain" />
           </div>
           <h2 class="text-2xl font-bold text-gray-900">
             Create Account
@@ -50,25 +46,25 @@
           <div class="space-y-4">
             <div>
               <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-              <input id="name" name="name" type="text" autocomplete="name" required v-model="name" class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all bg-gray-50 hover:bg-white" placeholder="John Doe" />
+              <input id="name" name="name" type="text" autocomplete="name" required v-model="name" class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm transition-all bg-gray-50 hover:bg-white" placeholder="John Doe" />
             </div>
 
             <div>
               <label for="email-address" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-              <input id="email-address" name="email" type="email" autocomplete="email" required v-model="email" class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all bg-gray-50 hover:bg-white" placeholder="you@example.com" />
+              <input id="email-address" name="email" type="email" autocomplete="email" required v-model="email" class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm transition-all bg-gray-50 hover:bg-white" placeholder="you@example.com" />
             </div>
             
             <div>
               <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-              <input id="password" name="password" type="password" autocomplete="new-password" required v-model="password" class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all bg-gray-50 hover:bg-white" placeholder="••••••••" />
+              <input id="password" name="password" type="password" autocomplete="new-password" required v-model="password" class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm transition-all bg-gray-50 hover:bg-white" placeholder="••••••••" />
               <div v-if="password.length > 0 && password.length < 8" class="mt-1 text-xs text-red-500">Password must be at least 8 characters.</div>
             </div>
           </div>
 
           <div>
-            <button type="submit" :disabled="loading" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg transfrom hover:-translate-y-0.5">
+            <button type="submit" :disabled="loading" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-lg text-white dark:text-black bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black dark:focus:ring-white disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg transfrom hover:-translate-y-0.5">
               <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-                <svg v-if="!loading" class="h-5 w-5 text-indigo-200 group-hover:text-indigo-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg v-if="!loading" class="h-5 w-5 text-gray-300 group-hover:text-gray-100 dark:text-gray-600 dark:group-hover:text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                 </svg>
                 <svg v-else class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -119,7 +115,7 @@
         <div class="text-center mt-4">
           <p class="text-sm text-gray-600">
             Already have an account? 
-            <router-link to="/login" class="font-bold text-indigo-600 hover:text-indigo-500 hover:underline">
+            <router-link to="/login" class="font-bold text-black dark:text-white hover:underline">
               Sign in
             </router-link>
           </p>

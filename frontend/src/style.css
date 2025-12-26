@@ -49,13 +49,13 @@
 
   --primary: #0B6E4F;
   --primary-600: #08563E;
-  --accent: #2B6CB0;
-  --accent-600: #234E88;
+  --accent: #000000;
+  --accent-600: #1a1a1a;
 
   --success: #059669;
   --warning: #D97706;
   --danger: #DC2626;
-  --info: #2563EB;
+  --info: #000000;
 
   --text-primary: #0F1724;
   --text-secondary: #475569;
@@ -72,37 +72,35 @@
 
 .dark {
   /* Dark Theme */
-  --bg-app: #0B0F12;
-  --bg-surface: #0F1417;
-  --bg-surface-2: #13171A;
-  --bg-elevated: #1B2024;
+  --bg-app: #030303;
+  --bg-surface: #0a0a0a;
+  --bg-surface-2: #171717;
+  --bg-elevated: #262626;
 
-  --primary: #6EE7B7;
-  --primary-600: #4FD79F;
-  --accent: #60A5FA;
-  --accent-600: #3B82F6;
+  --primary: #ffffff;
+  --primary-600: #e5e5e5;
+  --accent: #FFFFFF;
+  --accent-600: #e5e5e5;
 
   --success: #34D399;
   --warning: #FBBF24;
   --danger: #F87171;
-  --info: #93C5FD;
+  --info: #FFFFFF;
 
-  --text-primary: #E6EEF3;
-  --text-secondary: #B8C6CF;
-  --text-muted: #8B9AA3;
+  --text-primary: #ffffff;
+  --text-secondary: #a3a3a3;
+  --text-muted: #737373;
 
-  --border: rgba(255, 255, 255, 0.06);
-  --divider-strong: rgba(255, 255, 255, 0.10);
-  --backdrop: rgba(2, 6, 9, 0.6);
+  --border: rgba(255, 255, 255, 0.1);
+  --divider-strong: rgba(255, 255, 255, 0.15);
+  --backdrop: rgba(0, 0, 0, 0.7);
 
-  --input-bg: #0E1417;
-  --input-border: rgba(255, 255, 255, 0.06);
-  --placeholder: #6F7F87;
+  --input-bg: #0a0a0a;
+  --input-border: rgba(255, 255, 255, 0.1);
+  --placeholder: #525252;
 }
 
-html {
-  scrollbar-gutter: stable;
-}
+
 
 body {
   background-color: var(--bg-app);
@@ -139,4 +137,10 @@ body {
   /* IE and Edge */
   scrollbar-width: none;
   /* Firefox */
+}
+
+/* Toast Notification Styling */
+.brain-vault-toast {
+  background-color: #F3F4F6 !important;
+  color: #000000 !important;
 }

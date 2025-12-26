@@ -1,13 +1,13 @@
 <template>
   <div 
     v-if="isOpen"
-    class="fixed inset-y-0 right-0 w-96 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out z-50 flex flex-col border-l border-gray-200 dark:border-gray-700"
+    class="fixed inset-y-0 right-0 w-96 bg-white dark:bg-surface shadow-xl transform transition-transform duration-300 ease-in-out z-50 flex flex-col border-l border-gray-200 dark:border-gray-700"
     :class="isOpen ? 'translate-x-0' : 'translate-x-full'"
   >
     <!-- Header -->
     <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
       <h3 class="text-lg font-medium text-gray-900 dark:text-white flex items-center">
-        <svg class="w-5 h-5 mr-2 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 mr-2 text-black dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
         </svg>
         Ask Question
@@ -26,8 +26,8 @@
           :class="[
             'max-w-xs px-4 py-2 rounded-lg text-sm',
             msg.role === 'user' 
-              ? 'bg-indigo-600 text-white rounded-br-none' 
-              : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-bl-none shadow-sm'
+              ? 'bg-black dark:bg-white text-white dark:text-black rounded-br-none' 
+              : 'bg-white dark:bg-surface text-gray-900 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-bl-none shadow-sm'
           ]"
         >
           <div class="whitespace-pre-wrap">{{ msg.content }}</div>
@@ -43,7 +43,7 @@
         </div>
       </div>
       <div v-if="loading" class="flex justify-start">
-        <div class="bg-white dark:bg-gray-800 px-4 py-2 rounded-lg rounded-bl-none border border-gray-200 dark:border-gray-700 shadow-sm">
+        <div class="bg-white dark:bg-surface px-4 py-2 rounded-lg rounded-bl-none border border-gray-200 dark:border-gray-700 shadow-sm">
           <div class="flex space-x-1">
             <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
             <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
@@ -55,10 +55,10 @@
     </div>
 
     <!-- Input Area -->
-    <div class="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 space-y-3">
+    <div class="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-surface space-y-3">
       <!-- Provider Selection -->
       <div>
-        <select v-model="selectedProvider" class="block w-full text-xs border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+        <select v-model="selectedProvider" class="block w-full text-xs border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
           <option value="gemini">Google Gemini</option>
           <option value="openai">OpenAI (GPT-3.5)</option>
         </select>
@@ -69,13 +69,13 @@
           v-model="query" 
           type="text" 
           placeholder="Ask about this document..." 
-          class="flex-1 border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          class="flex-1 border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           :disabled="loading"
         />
         <button 
           type="submit" 
           :disabled="!query || loading"
-          class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+          class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white dark:text-black bg-black dark:bg-white hover:bg-gray-900 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black dark:focus:ring-white disabled:opacity-50"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

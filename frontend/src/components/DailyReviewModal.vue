@@ -9,10 +9,10 @@
         <!-- Header -->
         <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-white/80 dark:bg-app/80 backdrop-blur z-10">
            <h1 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+              <svg class="w-6 h-6 text-black dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
               Daily Review
            </h1>
-           <button @click="close" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded-full transition-colors">
+           <button @click="close" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 bg-gray-100 dark:bg-elevated rounded-full transition-colors">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
            </button>
         </div>
@@ -30,7 +30,7 @@
          </div>
          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">All Caught Up!</h2>
          <p class="text-gray-500 dark:text-text-secondary mb-8">You've reviewed all {{ memories.length }} memories for today.</p>
-         <button @click="close" class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Return to Dashboard</button>
+         <button @click="close" class="px-6 py-3 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition">Return to Dashboard</button>
       </div>
 
       <div v-else class="w-full max-w-2xl mx-auto flex flex-col h-full justify-center">
@@ -64,7 +64,7 @@
                <button @click="prev" :disabled="currentIndex === 0" class="text-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-30 transition-colors">
                   Previous
                </button>
-               <button @click="next" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+               <button @click="next" class="px-6 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition">
                   {{ isLast ? 'Finish' : 'Next' }}
                </button>
             </div>

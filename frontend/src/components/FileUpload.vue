@@ -5,12 +5,12 @@
         @dragleave.prevent="isDragging = false" 
         @drop.prevent="handleDrop"
         :class="['relative border-2 border-dashed rounded-xl p-4 text-center transition-all duration-200 ease-in-out cursor-pointer group', 
-                 isDragging ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-700/50']"
+                 isDragging ? 'border-black bg-gray-50 dark:border-white dark:bg-white/10' : 'border-gray-200 dark:border-gray-700 hover:border-black dark:hover:border-white hover:bg-gray-50 dark:hover:bg-gray-700/50']"
       >
           <input type="file" ref="fileInput" @change="handleFileChange" class="hidden" />
           
           <div v-if="!selectedFile && !uploading && !success" @click="$refs.fileInput.click()" class="flex flex-col items-center py-2">
-               <svg class="w-8 h-8 text-indigo-400 mb-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+               <svg class="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
                <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Click to upload or drag & drop</span>
                <span class="text-xs text-gray-400 mt-1">PDF, TXT, MD, DOCX</span>
           </div>
@@ -18,12 +18,12 @@
           <!-- Selected File State -->
           <div v-else-if="selectedFile && !uploading && !success" class="flex items-center justify-between p-2">
                <div class="flex items-center gap-3 overflow-hidden">
-                   <div class="h-8 w-8 rounded bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 flex items-center justify-center shrink-0">
+                   <div class="h-8 w-8 rounded bg-gray-100 dark:bg-gray-800 text-black dark:text-white flex items-center justify-center shrink-0">
                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                    </div>
                    <span class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ selectedFile.name }}</span>
                </div>
-               <button @click.stop="uploadFile" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-md transition-colors shadow-sm">
+               <button @click.stop="uploadFile" class="px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-200 text-xs font-bold rounded-md transition-colors shadow-sm">
                    Upload
                </button>
           </div>
@@ -31,9 +31,9 @@
            <!-- Uploading State -->
           <div v-else-if="uploading" class="flex flex-col items-center py-2">
                <div class="w-full bg-gray-200 rounded-full h-1.5 dark:bg-gray-700 mb-3 mx-4">
-                  <div class="bg-indigo-600 h-1.5 rounded-full animate-pulse w-2/3 mx-auto"></div>
+                  <div class="bg-black dark:bg-white h-1.5 rounded-full animate-pulse w-2/3 mx-auto"></div>
                 </div>
-               <span class="text-xs text-indigo-600 dark:text-indigo-400 font-medium">Uploading...</span>
+               <span class="text-xs text-black dark:text-white font-medium">Uploading...</span>
           </div>
 
            <!-- Success State -->
@@ -54,6 +54,8 @@
 <script setup>
 import { ref } from 'vue';
 import api from '../services/api';
+
+const emit = defineEmits(['upload-complete']);
 
 const selectedFile = ref(null);
 const uploading = ref(false);
@@ -84,7 +86,7 @@ const uploadFile = async () => {
   formData.append('file', selectedFile.value);
 
   try {
-    await api.post('/documents/upload', formData, {
+    const response = await api.post('/documents/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -93,6 +95,8 @@ const uploadFile = async () => {
     message.value = '';
     selectedFile.value = null; // Clear immediately to show success state
     
+    emit('upload-complete', response.data);
+
     // Auto reset after 3s
     setTimeout(() => {
         if (success.value) reset();

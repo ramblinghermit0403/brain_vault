@@ -1,8 +1,8 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 shadow rounded-lg h-full flex flex-col">
+  <div class="bg-white dark:bg-surface shadow rounded-lg h-full flex flex-col">
     <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
       <h2 class="text-lg font-medium text-gray-900 dark:text-white">Your Knowledge Base</h2>
-      <button @click="fetchMemories" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 text-sm font-medium">
+      <button @click="fetchMemories" class="text-black dark:text-white hover:text-gray-700 dark:hover:text-gray-300 text-sm font-medium">
         Refresh
       </button>
     </div>
@@ -13,7 +13,7 @@
         <div class="flex justify-between items-start">
           <div class="flex-1">
             <div class="flex items-center space-x-2 mb-1">
-              <span :class="{'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200': memory.type === 'memory', 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200': memory.type === 'document'}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium">
+              <span :class="{'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200': memory.type === 'memory', 'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200': memory.type === 'document'}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium">
                 <svg v-if="memory.type === 'memory'" class="mr-1.5 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
@@ -28,7 +28,7 @@
             <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">{{ formatDate(memory.created_at) }}</p>
           </div>
           <div class="ml-4 flex-shrink-0 flex space-x-2">
-            <button v-if="memory.type === 'memory'" @click="$emit('edit', memory)" class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200">
+            <button v-if="memory.type === 'memory'" @click="$emit('edit', memory)" class="text-gray-400 hover:text-black dark:hover:text-white transition-colors duration-200">
               <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>

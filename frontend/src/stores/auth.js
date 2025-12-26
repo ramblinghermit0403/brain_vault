@@ -5,25 +5,31 @@ import { jwtDecode } from "jwt-decode";
 export const useAuthStore = defineStore('auth', {
     state: () => {
         const token = localStorage.getItem('token');
+        const refreshToken = localStorage.getItem('refreshToken');
         let user = null;
-        if (token) {
+
+        const decodeUser = (t) => {
             try {
-                const decoded = jwtDecode(token);
-                if (!decoded.email) {
-                    throw new Error("Token missing email claim");
-                }
-                user = {
-                    email: decoded.email,
-                    name: decoded.name || decoded.email.split('@')[0] // Fallback if name is missing
+                const decoded = jwtDecode(t);
+                return {
+                    email: decoded.email || decoded.sub,
+                    name: decoded.name || (decoded.email || decoded.sub || '').split('@')[0]
                 };
             } catch (e) {
-                localStorage.removeItem('token');
+                return null;
             }
+        };
+
+        if (token) {
+            user = decodeUser(token);
+            if (!user) localStorage.removeItem('token');
         }
+
         return {
             user,
             token: token || null,
-            isAuthenticated: !!token, // Ensure we check if token is valid? Simplify for now.
+            refreshToken: refreshToken || null,
+            isAuthenticated: !!token,
         };
     },
     actions: {
@@ -33,27 +39,58 @@ export const useAuthStore = defineStore('auth', {
                     new URLSearchParams({ username: email, password }),
                     { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
                 );
-                this.token = response.data.access_token;
-                this.isAuthenticated = true;
-                localStorage.setItem('token', this.token);
 
-                try {
-                    const decoded = jwtDecode(this.token);
-                    console.log('Decoded Token (Login):', decoded); // Debug log
-                    this.user = {
-                        email: decoded.email || decoded.sub,
-                        name: decoded.name || (decoded.email || decoded.sub).split('@')[0]
-                    };
-                } catch (e) {
-                    console.error("Token decode failed", e);
-                }
-
+                this.setTokens(response.data.access_token, response.data.refresh_token);
                 return true;
             } catch (error) {
                 console.error('Login failed:', error);
                 throw error;
             }
         },
+
+        setTokens(accessToken, refreshToken) {
+            this.token = accessToken;
+            this.refreshToken = refreshToken; // May be undefined if not provided
+            this.isAuthenticated = true;
+
+            localStorage.setItem('token', accessToken);
+            if (refreshToken) {
+                localStorage.setItem('refreshToken', refreshToken);
+            }
+
+            // buffer decode
+            try {
+                const decoded = jwtDecode(accessToken);
+                this.user = {
+                    email: decoded.email || decoded.sub,
+                    name: decoded.name || (decoded.email || decoded.sub || '').split('@')[0]
+                };
+            } catch (e) { console.error("Token decode failed", e); }
+        },
+
+        async refresh() {
+            if (!this.refreshToken) throw new Error("No refresh token");
+            try {
+                // Bypass interceptor to avoid infinite loop -> Create new instance or use fetch?
+                // Actually if we use same api instance, we must flag this request to skip interceptor logic or handle it carefully.
+                // Simpler: Use fetch or a naked axios call for refresh to avoid circular dependency in interceptors.
+                const response = await fetch('http://localhost:8000/api/v1/auth/refresh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refresh_token: this.refreshToken })
+                });
+
+                if (!response.ok) throw new Error("Refresh failed");
+                const data = await response.json();
+
+                this.setTokens(data.access_token, data.refresh_token || this.refreshToken);
+                return data.access_token;
+            } catch (e) {
+                this.logout();
+                throw e;
+            }
+        },
+
         async register(email, password, name) {
             try {
                 await api.post('/auth/register', { email, password, name });
@@ -66,8 +103,10 @@ export const useAuthStore = defineStore('auth', {
         logout() {
             this.user = null;
             this.token = null;
+            this.refreshToken = null;
             this.isAuthenticated = false;
             localStorage.removeItem('token');
+            localStorage.removeItem('refreshToken');
         },
     },
 });
