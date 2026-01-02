@@ -12,6 +12,7 @@ export const useAuthStore = defineStore('auth', {
             try {
                 const decoded = jwtDecode(t);
                 return {
+                    id: decoded.sub,
                     email: decoded.email || decoded.sub,
                     name: decoded.name || (decoded.email || decoded.sub || '').split('@')[0]
                 };
@@ -62,6 +63,7 @@ export const useAuthStore = defineStore('auth', {
             try {
                 const decoded = jwtDecode(accessToken);
                 this.user = {
+                    id: decoded.sub,
                     email: decoded.email || decoded.sub,
                     name: decoded.name || (decoded.email || decoded.sub || '').split('@')[0]
                 };

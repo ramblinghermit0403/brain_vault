@@ -401,7 +401,7 @@ const fetchDocument = async () => {
             isInboxItem.value = false;
             found = true;
         }
-    } catch (e) { console.log('Not in memory list', e); }
+    } catch (e) { console.debug('Not in memory list', e); }
 
     // 2. If not found, try Inbox
     if (!found) {
@@ -423,7 +423,7 @@ const fetchDocument = async () => {
                 found = true;
             }
         } catch (e) {
-             console.log('Not in inbox', e);
+             console.debug('Not in inbox', e);
         }
     }
 

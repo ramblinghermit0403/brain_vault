@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import api from '../services/api';
+import { useAuthStore } from './auth';
 
 export const useInboxStore = defineStore('inbox', {
     state: () => ({
@@ -33,8 +34,16 @@ export const useInboxStore = defineStore('inbox', {
             }
         },
 
-        connectWebSocket(userId = '1') { // Default user 1 for now
+        connectWebSocket() {
             if (this.socket) return;
+
+            const authStore = useAuthStore();
+            const userId = authStore.user?.id;
+
+            if (!userId) {
+                console.warn('WebSocket connection skipped: No user ID found');
+                return;
+            }
 
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.hostname}:8000/ws/${userId}`;
