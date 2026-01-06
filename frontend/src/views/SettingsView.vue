@@ -13,21 +13,21 @@
               <nav class="-mb-px flex space-x-8">
                   <button 
                     @click="activeTab = 'general'"
-                    :class="activeTab === 'general' ? 'border-black dark:border-white text-black dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-text-secondary dark:hover:text-gray-300'"
+                    :class="activeTab === 'general' ? 'border-black dark:border-white text-black dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
                     class="whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors"
                   >
                       General
                   </button>
                   <button 
                     @click="activeTab = 'integration'"
-                    :class="activeTab === 'integration' ? 'border-black dark:border-white text-black dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-text-secondary dark:hover:text-gray-300'"
+                    :class="activeTab === 'integration' ? 'border-black dark:border-white text-black dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
                     class="whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors"
                   >
                       Integrations
                   </button>
                   <button 
                     @click="activeTab = 'data'"
-                    :class="activeTab === 'data' ? 'border-black dark:border-white text-black dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-text-secondary dark:hover:text-gray-300'"
+                    :class="activeTab === 'data' ? 'border-black dark:border-white text-black dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
                     class="whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors"
                   >
                       Data & Export
@@ -41,12 +41,12 @@
           <!-- General Tab -->
           <div v-show="activeTab === 'general'" class="bg-white dark:bg-surface shadow rounded-lg px-8 py-8 border border-gray-100 dark:border-border animate-fade-in relative">
                
-               <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-text-primary mb-6">Appearance</h3>
+               <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-6">Appearance</h3>
                <div class="space-y-6 mb-8">
                    <div class="flex items-center justify-between">
                       <div>
-                        <span class="text-sm font-medium text-gray-900 dark:text-text-primary">Theme</span>
-                        <p class="text-xs text-gray-500 dark:text-text-secondary mt-1">Customize the look and feel of your workspace.</p>
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">Theme</span>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Customize the look and feel of your workspace.</p>
                       </div>
                       <ThemeToggle />
                    </div>
@@ -54,13 +54,13 @@
                
                <hr class="border-gray-100 dark:border-border mb-8" />
 
-               <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-text-primary mb-6">Preferences</h3>
+               <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-6">Preferences</h3>
                <div class="space-y-6">
                     <!-- Auto-Approve Toggle -->
                     <div class="flex items-center justify-between">
-                      <div>
-                        <span class="text-sm font-medium text-gray-900 dark:text-text-primary">Auto-Approve New Memories</span>
-                        <p class="text-xs text-gray-500 dark:text-text-secondary mt-1">Automatically add created memories to the vector store without manual review.</p>
+                       <div>
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">Auto-Approve New Memories</span>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Automatically add created memories to the vector store without manual review.</p>
                       </div>
                       <button 
                         @click="toggleAutoApprove" 
@@ -84,7 +84,7 @@
                            <div class="sm:col-span-4">
                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email address</label>
                                <div class="mt-1">
-                                   <input type="email" disabled :value="authStore.user?.email || 'user@example.com'" class="bg-gray-50 dark:bg-gray-700 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 px-3 text-gray-500 cursor-not-allowed">
+                                   <input type="email" disabled :value="authStore.user?.email || 'user@example.com'" class="bg-gray-50 dark:bg-gray-700 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md py-2 px-3 text-gray-500 dark:text-gray-400 cursor-not-allowed">
                                </div>
                            </div>
                        </div>
@@ -125,19 +125,19 @@
                       <div>
                         <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Provider</label>
                         <div class="relative">
-                            <select v-model="newKey.provider" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-text-primary appearance-none">
+                            <select v-model="newKey.provider" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white appearance-none">
                               <option value="openai">OpenAI</option>
                               <option value="anthropic">Anthropic</option>
                               <option value="gemini">Google Gemini</option>
                             </select>
-                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-text-secondary">
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-400">
                                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                             </div>
                         </div>
                       </div>
                       <div>
                         <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">API Key</label>
-                        <input type="password" v-model="newKey.api_key" class="block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-text-primary py-2 px-3" placeholder="sk-..." />
+                        <input type="password" v-model="newKey.api_key" class="block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white py-2 px-3" placeholder="sk-..." />
                       </div>
                     </div>
                     

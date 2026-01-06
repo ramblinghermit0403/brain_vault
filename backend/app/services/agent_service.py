@@ -11,8 +11,9 @@ from langchain_core.tools import tool, StructuredTool
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.agents import AgentExecutor, create_react_agent
-from langchain import hub
+from langchain_aws import ChatBedrock
+from langgraph.prebuilt import create_react_agent
+
 
 # App Imports
 from app.core.config import settings
@@ -20,6 +21,7 @@ from app.db.session import AsyncSessionLocal
 from app.models.chat import ChatMessage, ChatSession, MessageRole
 from app.services.llm_service import llm_service
 from app.services.vector_store import vector_store
+from app.services.retrieval_service import retrieval_service
 from sqlalchemy.future import select
 
 logger = logging.getLogger(__name__)
@@ -141,9 +143,20 @@ class AgentService:
                         max_tokens=max_tokens # New param
                     )
                 raise ValueError("OpenAI API Key not configured.")
+            elif "nova" in model_name.lower():
+                return ChatBedrock(
+                    model_id="apac.amazon.nova-pro-v1:0",
+                    model_kwargs={"temperature": temperature, "maxTokens": max_tokens}
+                )
             else:
                 if settings.OPENAI_API_KEY: return ChatOpenAI(api_key=settings.OPENAI_API_KEY, model="gpt-4o", temperature=temperature, max_tokens=max_tokens)
                 if google_key: return ChatGoogleGenerativeAI(google_api_key=google_key, model="gemini-2.5-flash", temperature=temperature, max_output_tokens=max_tokens)
+                # Fallback check for Bedrock Nova if configured via implicit Boto3 env vars
+                try:
+                    return ChatBedrock(model_id="apac.amazon.nova-pro-v1:0", model_kwargs={"temperature": temperature})
+                except:
+                    pass
+                    
                 raise ValueError("No LLM API keys configured.")
 
         llm = get_llm(model)
@@ -225,43 +238,84 @@ class AgentService:
         
         tools = [search_memory_tool_instance, save_fact_tool_instance]
         
-        # 4. Create Agent
-        prompt = hub.pull("hwchase17/react")
+        # 4. Create Agent (LangGraph)
+        # This creates a compiled state graph (Runnable)
+        app = create_react_agent(llm, tools)
         
-        agent = create_react_agent(llm, tools, prompt)
-        # Enable intermediate steps
-        agent_executor = AgentExecutor(
-            agent=agent, 
-            tools=tools, 
-            verbose=True, 
-            handle_parsing_errors=True,
-            return_intermediate_steps=True, # Capture tool usage
-            max_iterations=10 # Ensure enough loops for multiple facts
-        )
+        # 5. Prepare Input for LangGraph
         
-        # 5. Run
+        # 5.0 Update History with User Message
         await chat_history.add_message(HumanMessage(content=message))
         history_messages = await chat_history.aget_messages()
-        history_text = "\n".join([f"{m.type}: {m.content}" for m in history_messages[:-1]]) 
         
-        # Add a clear instruction to record ALL facts independently
-        instruction = "You are a thorough assistant. If the user provides multiple facts, notes, or details, you MUST call 'save_fact' for EACH one independently to ensure they are all recorded. Do not skip any details."
-        
-        final_input = f"{instruction}\n\n"
-        if history_text:
-            final_input += f"Previous Conversation:\n{history_text}\n\n"
-        
-        final_input += f"Current Input: {message}"
-
+        # 5.1 PRE-FETCH CONTEXT (Smart RAG)
+        # Instead of waiting for tool use, we proactively fetch relevant context
+        # This gives the agent "reasoning text" immediately.
+        context_str = ""
         try:
-            result = await agent_executor.ainvoke({"input": final_input})
-            output = result["output"]
-            intermediate_steps = result.get("intermediate_steps", [])
+            # We need a db session for retrieval
+            async with AsyncSessionLocal() as db:
+                # Top k=3 for immediate context
+                results = await retrieval_service.search_memories(
+                    query=message,
+                    user_id=user_id,
+                    db=db,
+                    top_k=3
+                )
+                if results:
+                    formatted_ctx = []
+                    for res in results:
+                        meta = res["metadata"]
+                        title = meta.get("title", "Untitled")
+                        # Include summary if available for denser context
+                        content = res["text"]
+                        if meta.get("summary"):
+                             content = f"Summary: {meta['summary']}\nDetails: {content}"
+                        formatted_ctx.append(f"Source: {title}\nContent: {content}")
+                    
+                    if formatted_ctx:
+                        context_str = "\n\n=== RELEVANT MEMORY CONTEXT ===\n" + "\n---\n".join(formatted_ctx) + "\n=============================\n"
+        except Exception as e:
+            logger.error(f"Context pre-fetch failed: {e}")
+
+        # Define System Instruction
+        instruction = (
+            "You are a helpful assistant with access to a Brain Vault memory. "
+            "1. If the user asks a question or asks to recall/search, USE 'search_memory' to find the answer and PROVIDE THE ANSWER directly. Do NOT save facts about the search itself. "
+            "2. If the user provides NEW facts, notes, or memories to store, call 'save_fact' for each discrete item. "
+            "3. If the user asks to 'recall' or 'retrieve', your primary job is to SEARCH and ANSWER, not to save."
+        )
+
+        # "instruction" acts as the System Prompt
+        # We append the context to the system instruction so the agent "knows" it.
+        final_instruction = instruction + context_str
+        instruction_msg = SystemMessage(content=final_instruction)
+        
+        # history_messages already includes the current user message (added at L245)
+        input_messages = [instruction_msg] + history_messages
+        
+        try:
+            # invoke returns a dict with keys like 'messages' (list of BaseMessage)
+            result = await app.ainvoke({"messages": input_messages})
             
-            # Extract Sources
+            # Extract final response from the last AI message
+            messages_out = result.get("messages", [])
+            output = ""
+            if messages_out and isinstance(messages_out[-1], AIMessage):
+                output = messages_out[-1].content
+            else:
+                output = "No response generated."
+
+            # Extract Sources from tool executions in message history
             sources = []
-            for action, observation in intermediate_steps:
-                if action.tool == "search_memory":
+            # We scan messages for ToolMessage or AIMessage with tool_calls
+            # But our specific source logic relied on "observation" strings from "search_memory"
+            # In LangGraph, tool outputs are ToolMessages.
+            from langchain_core.messages import ToolMessage
+            
+            for msg in messages_out:
+                if isinstance(msg, ToolMessage) and msg.name == "search_memory":
+                    observation = msg.content
                     # Parse the observation string which mimics document content
                     # Format: "Source: Title [ID: 123]\nContent: ..."
                     if isinstance(observation, str) and "Source: " in observation:

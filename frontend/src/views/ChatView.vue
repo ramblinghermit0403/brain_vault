@@ -101,6 +101,8 @@ async function handleFeedback(messageId, type) {
     await chatStore.sendFeedback(messageId, type);
     toast.success("Feedback submitted");
 }
+
+
 </script>
 
 <template>
@@ -176,14 +178,12 @@ async function handleFeedback(messageId, type) {
                        </div>
                        <div class="text-right mt-1 text-[10px] text-gray-400 font-medium tracking-wide mr-1">{{ formatDate(msg.created_at).split(',')[1] || 'Now' }}</div>
                     </div>
-                    <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden shrink-0 mt-1">
-                      <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=User" alt="User" />
-                    </div>
+
                  </div>
 
                  <!-- AI -->
                  <div v-else-if="msg.role === 'assistant'" class="flex justify-start gap-4">
-                    <div class="w-8 h-8 rounded-full bg-white border border-gray-200 p-1 shrink-0 mt-1 shadow-sm">
+                    <div class="w-8 h-8 rounded-full bg-white border border-gray-200 shrink-0 mt-1 shadow-sm">
                        <img src="/image.svg" alt="AI" />
                     </div>
                     <div class="max-w-[85%]">
@@ -214,16 +214,17 @@ async function handleFeedback(messageId, type) {
                     </div>
                  </div>
               </template>
-              
-              <div v-if="chatStore.thinking" class="flex justify-start gap-4 animate-pulse opacity-70">
-                  <div class="w-8 h-8 rounded-full bg-gray-200 shrink-0"></div>
-                  <div class="bg-gray-100 h-12 w-48 rounded-2xl rounded-tl-sm"></div>
-              </div>
+           </div>
+           
+           <!-- Thinking Indicator (Outside space-y for custom spacing) -->
+           <div v-if="chatStore.thinking" class="max-w-3xl mx-auto mt-2 flex justify-start gap-4 animate-pulse opacity-70">
+              <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 shrink-0"></div>
+              <div class="bg-gray-100 dark:bg-surface-2 h-12 w-48 rounded-2xl rounded-tl-sm"></div>
            </div>
         </div>
 
         <!-- BOTTOM BAR (Standard View) -->
-        <div class="p-6 pb-8 z-10" v-if="chatStore.messages.length > 0 && chatStore.currentSession">
+        <div class="px-6 pt-2 pb-8 z-10" v-if="chatStore.messages.length > 0 && chatStore.currentSession">
            <div class="max-w-3xl mx-auto">
               <div class="bg-gray-100 dark:bg-surface-2 rounded-3xl transition-all focus-within:ring-2 focus-within:ring-gray-200 dark:focus-within:ring-gray-700 p-2 border border-transparent focus-within:border-gray-300 dark:focus-within:border-gray-600">
                  <textarea
@@ -236,10 +237,15 @@ async function handleFeedback(messageId, type) {
                  
                  <div class="px-2 pb-1 flex justify-end items-center text-xs text-gray-500 mt-1">
                     <div class="flex items-center gap-3">
-                       <div class="flex items-center gap-1 cursor-pointer hover:text-gray-700">
-                          
-                          <span class="font-medium">Gemini 2.5 Flash</span>
-                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                       <div class="relative group">
+                          <select 
+                             v-model="chatStore.selectedModel" 
+                             class="appearance-none bg-transparent border-none text-xs text-gray-700 dark:text-gray-300 font-medium font-sans cursor-pointer focus:ring-0 pr-6 hover:text-black dark:hover:text-white transition-colors"
+                             title="Select AI Model"
+                          >
+                             <option v-for="model in chatStore.availableModels" :key="model.id" :value="model.id" class="text-gray-900 bg-white dark:bg-surface dark:text-gray-100">{{ model.name }}</option>
+                          </select>
+                          <svg class="w-3 h-3 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                        </div>
                        
                        <button 
@@ -275,10 +281,15 @@ async function handleFeedback(messageId, type) {
 
                  <div class="px-4 pb-2 flex justify-end items-center text-sm text-gray-500">
                     <div class="flex items-center gap-4">
-                       <div class="flex items-center gap-1 cursor-pointer hover:text-gray-700">
-                          
-                          <span class="font-medium">Gemini 2.5 Flash</span>
-                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                       <div class="relative group">
+                          <select 
+                             v-model="chatStore.selectedModel" 
+                             class="appearance-none bg-transparent border-none text-sm text-gray-700 dark:text-gray-300 font-medium font-sans cursor-pointer focus:ring-0 pr-6 hover:text-black dark:hover:text-white transition-colors"
+                             title="Select AI Model"
+                          >
+                             <option v-for="model in chatStore.availableModels" :key="model.id" :value="model.id" class="text-gray-900 bg-white dark:bg-surface dark:text-gray-100">{{ model.name }}</option>
+                          </select>
+                          <svg class="w-3 h-3 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                        </div>
                        
                        <button 

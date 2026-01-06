@@ -1,29 +1,31 @@
 <template>
   <div class="min-h-screen flex bg-white font-sans">
     <!-- Left Side: Visual/Branding -->
-    <div class="hidden lg:flex w-1/2 bg-black dark:bg-white relative overflow-hidden items-center justify-center">
-        <!-- Abstract Background Pattern -->
-        <div class="absolute inset-0 opacity-20">
-            <svg class="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <path d="M0 100 L100 0 L100 100 Z" fill="url(#grad2)" />
-                <defs>
-                    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
-                         <stop offset="0%" stop-color="#000000" stop-opacity="1" />
-                        <stop offset="100%" stop-color="#333333" stop-opacity="1" />
-                    </linearGradient>
-                </defs>
-            </svg>
-            <div class="absolute top-[20%] right-[10%] w-[300px] h-[300px] rounded-full bg-white blur-3xl opacity-20"></div>
-        </div>
-        
-        <div class="relative z-10 text-center px-12 max-w-xl">
-             <div class="mb-8 flex justify-center">
-                 <div class="h-16 w-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30 shadow-xl">
-                    <img src="/image.svg" alt="MemWyre" class="h-10 w-10 object-contain" />
-                 </div>
+    <!-- Left Side: Visual/Branding -->
+    <!-- Left Side: Visual/Branding -->
+    <!-- Left Side: Visual/Branding -->
+    <div class="hidden lg:flex w-1/2 bg-black relative items-center justify-center">
+        <div class="max-w-md w-full px-12">
+            <div class="flex items-center gap-4 mb-6">
+                <img src="/image.svg" alt="MemWyre" class="h-12 w-12 object-contain invert" />
+                <h1 class="text-5xl font-bold text-white tracking-tight">MemWyre</h1>
             </div>
-            <h2 class="text-4xl font-extrabold text-white dark:text-black mb-6 leading-tight">Start Your Knowledge Journey</h2>
-            <p class="text-lg text-gray-300 dark:text-gray-600 font-light">Join thousands of users who are organizing their minds and boosting their productivity with MemWyre.</p>
+            <p class="text-lg text-gray-400 mb-12">Your Second Brain, Unlocked.</p>
+            
+            <div class="space-y-6 text-gray-400 font-mono text-sm">
+                <div class="flex items-center gap-4">
+                    <span class="text-gray-600">→</span>
+                    <span>Instant capture</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-gray-600">→</span>
+                    <span>Smart retrieval</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-gray-600">→</span>
+                    <span>Neural linking</span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -31,10 +33,10 @@
     <div class="w-full lg:w-1/2 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
       <div class="max-w-md w-full space-y-8">
         <div class="text-center">
-          <div class="lg:hidden mx-auto h-12 w-12 bg-gray-100 dark:bg-surface rounded-full flex items-center justify-center mb-4">
-                <img src="/image.svg" alt="MemWyre" class="h-8 w-8 object-contain" />
+          <div class="lg:hidden mx-auto h-12 w-12 bg-black flex items-center justify-center mb-4">
+                <img src="/image.svg" alt="MemWyre" class="h-8 w-8 object-contain invert" />
           </div>
-          <h2 class="text-2xl font-bold text-gray-900">
+          <h2 class="text-2xl font-bold text-gray-900 tracking-tight">
             Create Account
           </h2>
           <p class="mt-2 text-sm text-gray-600">
@@ -45,26 +47,26 @@
         <form class="mt-8 space-y-6" @submit.prevent="handleRegister">
           <div class="space-y-4">
             <div>
-              <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-              <input id="name" name="name" type="text" autocomplete="name" required v-model="name" class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm transition-all bg-gray-50 hover:bg-white" placeholder="John Doe" />
+              <label for="name" class="block text-xs uppercase tracking-wide font-semibold text-gray-500 mb-1">Full Name</label>
+              <input id="name" name="name" type="text" autocomplete="name" required v-model="name" class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-none placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black sm:text-sm transition-all" placeholder="John Doe" />
             </div>
 
             <div>
-              <label for="email-address" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-              <input id="email-address" name="email" type="email" autocomplete="email" required v-model="email" class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm transition-all bg-gray-50 hover:bg-white" placeholder="you@example.com" />
+              <label for="email-address" class="block text-xs uppercase tracking-wide font-semibold text-gray-500 mb-1">Email Address</label>
+              <input id="email-address" name="email" type="email" autocomplete="email" required v-model="email" class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-none placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black sm:text-sm transition-all" placeholder="you@example.com" />
             </div>
             
             <div>
-              <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-              <input id="password" name="password" type="password" autocomplete="new-password" required v-model="password" class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm transition-all bg-gray-50 hover:bg-white" placeholder="••••••••" />
+              <label for="password" class="block text-xs uppercase tracking-wide font-semibold text-gray-500 mb-1">Password</label>
+              <input id="password" name="password" type="password" autocomplete="new-password" required v-model="password" class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-none placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black sm:text-sm transition-all" placeholder="••••••••" />
               <div v-if="password.length > 0 && password.length < 8" class="mt-1 text-xs text-red-500">Password must be at least 8 characters.</div>
             </div>
           </div>
 
           <div>
-            <button type="submit" :disabled="loading" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-lg text-white dark:text-black bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black dark:focus:ring-white disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg transfrom hover:-translate-y-0.5">
+            <button type="submit" :disabled="loading" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold text-white bg-black hover:bg-gray-800 focus:outline-none disabled:opacity-70 transition-all duration-200">
               <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-                <svg v-if="!loading" class="h-5 w-5 text-gray-300 group-hover:text-gray-100 dark:text-gray-600 dark:group-hover:text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg v-if="!loading" class="h-5 w-5 text-gray-500 group-hover:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                 </svg>
                 <svg v-else class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -76,46 +78,35 @@
             </button>
           </div>
           
-          <div v-if="error" class="rounded-lg bg-red-50 p-4 border border-red-100">
-            <div class="flex">
-              <div class="flex-shrink-0">
-                <svg class="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div class="ml-3">
-                <h3 class="text-sm font-medium text-red-800">
-                  {{ error }}
-                </h3>
-              </div>
-            </div>
+          <div v-if="error" class="bg-red-50 p-3 border-l-2 border-red-500">
+              <p class="text-sm text-red-700">{{ error }}</p>
           </div>
           
            <div class="relative my-6">
               <div class="absolute inset-0 flex items-center">
                 <div class="w-full border-t border-gray-200"></div>
               </div>
-              <div class="relative flex justify-center text-sm">
-                <span class="px-2 bg-white text-gray-500">OR</span>
+              <div class="relative flex justify-center text-xs uppercase tracking-wide">
+                <span class="px-2 bg-white text-gray-400">Or continue with</span>
               </div>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
-             <button type="button" class="w-full inline-flex justify-center py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                 <svg class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor"><path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/></svg>
+             <button type="button" class="w-full inline-flex justify-center items-center py-2.5 px-4 border border-gray-300 shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                 <svg class="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="currentColor"><path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/></svg>
                  Google
              </button>
-             <button type="button" class="w-full inline-flex justify-center py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                  <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" /></svg>
+             <button type="button" class="w-full inline-flex justify-center items-center py-2.5 px-4 border border-gray-300 shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  <svg class="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" /></svg>
                   GitHub
              </button>
           </div>
         </form>
         
         <div class="text-center mt-4">
-          <p class="text-sm text-gray-600">
+          <p class="text-sm text-gray-500">
             Already have an account? 
-            <router-link to="/login" class="font-bold text-black dark:text-white hover:underline">
+            <router-link to="/login" class="font-bold text-black hover:underline">
               Sign in
             </router-link>
           </p>

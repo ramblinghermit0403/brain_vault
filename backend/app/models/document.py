@@ -40,3 +40,4 @@ class Chunk(Base):
     tags = Column(JSON, nullable=True)
 
     document = relationship("Document", back_populates="chunks")
+    memory = relationship("Memory", backref="chunks")

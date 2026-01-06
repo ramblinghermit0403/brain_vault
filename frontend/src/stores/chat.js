@@ -11,11 +11,10 @@ export const useChatStore = defineStore('chat', () => {
     const isLoading = ref(false);
     const error = ref(null);
     const thinking = ref(false);
-    const selectedModel = ref('gemini-2.5-flash'); // Default to Gemini for now
+    const selectedModel = ref('apac.amazon.nova-pro-v1:0'); // Default to Nova Pro
 
     const availableModels = [
-        { id: 'gpt-4o', name: 'GPT-4o' },
-        { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
+        { id: 'apac.amazon.nova-pro-v1:0', name: 'Amazon Nova Pro' },
         { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' }
     ];
 

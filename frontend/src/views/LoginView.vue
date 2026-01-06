@@ -1,20 +1,30 @@
 <template>
   <div class="min-h-screen flex bg-white font-sans">
     <!-- Left Side: Visual/Branding -->
-    <div class="hidden lg:flex w-1/2 bg-black dark:bg-white relative overflow-hidden items-center justify-center">
-        <!-- Abstract Background Pattern -->
-        <div class="absolute inset-0 opacity-20 bg-grid-white/[0.05]">
-            <!-- Subtle Grid or just plain black -->
-        </div>
-        
-        <div class="relative z-10 text-center px-12 max-w-xl">
-            <div class="mb-8 flex justify-center">
-                 <div class="h-16 w-16 bg-white flex items-center justify-center rounded-none border border-white/30">
-                    <img src="/image.svg" alt="MemWyre" class="h-10 w-10 object-contain grayscale" />
-                 </div>
+    <!-- Left Side: Visual/Branding -->
+    <!-- Left Side: Visual/Branding -->
+    <div class="hidden lg:flex w-1/2 bg-black relative items-center justify-center">
+        <div class="max-w-md w-full px-12">
+            <div class="flex items-center gap-4 mb-6">
+                <img src="/image.svg" alt="MemWyre" class="h-12 w-12 object-contain invert" />
+                <h1 class="text-5xl font-bold text-white tracking-tight">MemWyre</h1>
             </div>
-            <h2 class="text-4xl font-bold text-white mb-6 leading-tight tracking-tighter">Your Memory, Unlocked.</h2>
-            <p class="text-lg text-gray-400 font-light">Secure, fast, and built for your second brain.</p>
+            <p class="text-lg text-gray-400 mb-12">Your Second Brain, Unlocked.</p>
+            
+            <div class="space-y-6 text-gray-400 font-mono text-sm">
+                <div class="flex items-center gap-4">
+                    <span class="text-gray-600">→</span>
+                    <span>Instant capture</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-gray-600">→</span>
+                    <span>Smart retrieval</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-gray-600">→</span>
+                    <span>Neural linking</span>
+                </div>
+            </div>
         </div>
     </div>
 

@@ -5,9 +5,9 @@ from typing import List, Dict
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import uuid
 import numpy as np
-from sentence_transformers import SentenceTransformer
 import numpy as np
-from sentence_transformers import SentenceTransformer
+import os
+from langchain_aws import BedrockEmbeddings
 import re
 import json
 from app.services.llm_service import llm_service
@@ -29,10 +29,13 @@ class IngestionService:
         )
         # Initialize semantic model
         try:
-            self.sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
+            self.bedrock_embeddings = BedrockEmbeddings(
+                model_id="amazon.titan-embed-text-v1",
+                region_name=os.getenv("AWS_REGION", "us-east-1")
+            )
         except Exception as e:
-            print(f"Warning: Failed to load sentence transformer: {e}")
-            self.sentence_model = None
+            print(f"Warning: Failed to load Bedrock embeddings: {e}")
+            self.bedrock_embeddings = None
     
     def chunk_text(self, text: str) -> List[str]:
         """
@@ -133,9 +136,10 @@ class IngestionService:
         
         # Encode
         try:
-            embeddings = self.sentence_model.encode(sentences)
+            # Bedrock returns list of lists (vectors)
+            embeddings = self.bedrock_embeddings.embed_documents(sentences)
         except Exception as e:
-            print(f"Embedding failed: {e}")
+            print(f"Bedrock Embedding failed: {e}")
             return self.text_splitter.split_text(text) # Fallback
             
         chunks = []
