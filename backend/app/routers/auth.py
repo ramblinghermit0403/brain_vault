@@ -132,3 +132,211 @@ async def refresh_token(
         "token_type": "bearer",
         "refresh_token": request.refresh_token # Return same or a new one
     }
+
+import httpx
+from fastapi.responses import RedirectResponse
+from urllib.parse import urlencode
+
+@router.get("/oauth/{provider}/login")
+async def oauth_login(provider: str):
+    if provider == "google":
+        params = {
+            "client_id": settings.GOOGLE_CLIENT_ID,
+            "redirect_uri": f"{settings.BACKEND_URL}{settings.API_V1_STR}/auth/oauth/google/callback",
+            "response_type": "code",
+            "scope": "openid email profile",
+            "access_type": "offline",
+            "prompt": "consent"
+        }
+        url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
+        return RedirectResponse(url)
+    elif provider == "github":
+        params = {
+            "client_id": settings.GITHUB_CLIENT_ID,
+            "redirect_uri": f"{settings.BACKEND_URL}{settings.API_V1_STR}/auth/oauth/github/callback",
+            "scope": "user:email"
+        }
+        url = f"https://github.com/login/oauth/authorize?{urlencode(params)}"
+        return RedirectResponse(url)
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported provider")
+
+@router.get("/oauth/{provider}/callback")
+async def oauth_callback(
+    provider: str,
+    code: str,
+    db: AsyncSession = Depends(deps.get_db)
+):
+    try:
+        user_email = None
+        user_name = None
+        
+        async with httpx.AsyncClient() as client:
+            if provider == "google":
+                # Exchange code for token
+                token_url = "https://oauth2.googleapis.com/token"
+                data = {
+                    "client_id": settings.GOOGLE_CLIENT_ID,
+                    "client_secret": settings.GOOGLE_CLIENT_SECRET,
+                    "code": code,
+                    "grant_type": "authorization_code",
+                    "redirect_uri": f"{settings.BACKEND_URL}{settings.API_V1_STR}/auth/oauth/google/callback",
+                }
+                response = await client.post(token_url, data=data)
+                response.raise_for_status()
+                access_token = response.json()["access_token"]
+                
+                # Get User Info
+                user_info_resp = await client.get(
+                    "https://www.googleapis.com/oauth2/v1/userinfo",
+                    headers={"Authorization": f"Bearer {access_token}"}
+                )
+                user_info = user_info_resp.json()
+                user_email = user_info.get("email")
+                user_name = user_info.get("name")
+                
+            elif provider == "github":
+                # Exchange code for token
+                token_url = "https://github.com/login/oauth/access_token"
+                headers = {"Accept": "application/json"}
+                data = {
+                    "client_id": settings.GITHUB_CLIENT_ID,
+                    "client_secret": settings.GITHUB_CLIENT_SECRET,
+                    "code": code,
+                    "redirect_uri": f"{settings.BACKEND_URL}{settings.API_V1_STR}/auth/oauth/github/callback",
+                }
+                response = await client.post(token_url, data=data, headers=headers)
+                response.raise_for_status()
+                access_token = response.json().get("access_token")
+                
+                # Get User Info
+                user_resp = await client.get(
+                    "https://api.github.com/user",
+                    headers={"Authorization": f"Bearer {access_token}"}
+                )
+                user_data = user_resp.json()
+                user_name = user_data.get("name") or user_data.get("login")
+                
+                # Get Email (might be private)
+                emails_resp = await client.get(
+                    "https://api.github.com/user/emails",
+                     headers={"Authorization": f"Bearer {access_token}"}
+                )
+                emails = emails_resp.json()
+                primary_email = next((e for e in emails if e.get("primary")), None)
+                if primary_email:
+                    user_email = primary_email["email"]
+                else:
+                    user_email = emails[0]["email"] if emails else None
+
+        if not user_email:
+            raise HTTPException(status_code=400, detail="Could not retrieve email from provider")
+
+        # Find or Create User
+        result = await db.execute(select(User).where(func.lower(User.email) == user_email.lower()))
+        user = result.scalars().first()
+        
+        if not user:
+            # Create user (random password)
+            import secrets
+            random_password = secrets.token_urlsafe(16)
+            hashed_passwd = security.get_password_hash(random_password)
+            user = User(
+                email=user_email,
+                name=user_name,
+                hashed_password=hashed_passwd,
+                is_active=True
+            )
+            db.add(user)
+            await db.commit()
+            await db.refresh(user)
+            
+        # Generate Tokens
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        refresh_token_expires = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        
+        access_token = security.create_access_token(
+            user.id, expires_delta=access_token_expires, extra_claims={"email": user.email, "name": user.name}
+        )
+        refresh_token = security.create_refresh_token(
+            user.id, expires_delta=refresh_token_expires
+        )
+        
+        # Redirect to Frontend
+        # We assume frontend is running on FRONTEND_URL
+        redirect_url = f"{settings.FRONTEND_URL}/login?access_token={access_token}&refresh_token={refresh_token}"
+        return RedirectResponse(redirect_url)
+
+
+    except Exception as e:
+        # On error redirect to login with error param
+        return RedirectResponse(f"{settings.FRONTEND_URL}/login?error=OAuth_Failed")
+
+class GoogleOneTapRequest(BaseModel):
+    credential: str
+
+@router.post("/google-one-tap")
+async def google_one_tap_login(
+    request: GoogleOneTapRequest,
+    db: AsyncSession = Depends(deps.get_db)
+) -> Any:
+    """
+    Login using Google One Tap credential (ID Token)
+    """
+    try:
+        from google.oauth2 import id_token
+        from google.auth.transport import requests as google_requests
+        
+        # Verify the token
+        # You might need to supply clock_skew_in_seconds if time sync is an issue
+        id_info = id_token.verify_oauth2_token(
+            request.credential, 
+            google_requests.Request(), 
+            settings.GOOGLE_CLIENT_ID
+        )
+        
+        email = id_info['email']
+        name = id_info.get('name', email.split('@')[0])
+        
+        # Check if email is verified? Google ID tokens usually imply verified email.
+        if not id_info.get('email_verified'):
+             raise HTTPException(status_code=400, detail="Google email not verified")
+
+        # Find or Create User
+        result = await db.execute(select(User).where(func.lower(User.email) == email.lower()))
+        user = result.scalars().first()
+        
+        if not user:
+             # Create user
+            import secrets
+            random_password = secrets.token_urlsafe(16)
+            hashed_passwd = security.get_password_hash(random_password)
+            user = User(
+                email=email,
+                name=name,
+                hashed_password=hashed_passwd,
+                is_active=True
+            )
+            db.add(user)
+            await db.commit()
+            await db.refresh(user)
+            
+        # Generate Tokens
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        refresh_token_expires = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        
+        return {
+            "access_token": security.create_access_token(
+                user.id, expires_delta=access_token_expires, extra_claims={"email": user.email, "name": user.name}
+            ),
+            "refresh_token": security.create_refresh_token(
+                user.id, expires_delta=refresh_token_expires
+            ),
+            "token_type": "bearer",
+        }
+
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid Google Token")
+    except Exception as e:
+        print(f"Google One Tap Error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
