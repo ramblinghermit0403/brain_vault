@@ -67,6 +67,7 @@ export const useAuthStore = defineStore('auth', {
                     email: decoded.email || decoded.sub,
                     name: decoded.name || (decoded.email || decoded.sub || '').split('@')[0]
                 };
+                localStorage.setItem('lastKnownUser', JSON.stringify(this.user));
             } catch (e) { console.error("Token decode failed", e); }
         },
 
