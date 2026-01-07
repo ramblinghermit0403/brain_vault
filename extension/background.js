@@ -9,7 +9,37 @@ chrome.sidePanel
 
 chrome.runtime.onInstalled.addListener(() => {
     console.log('Brain Vault Extension installed');
+
+    // Create Context Menu
+    chrome.contextMenus.create({
+        id: "save-to-memwyre",
+        title: "Save to MemWyre",
+        contexts: ["page"]
+    });
 });
+
+// Handle Context Menu Clicks
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+    if (info.menuItemId === "save-to-memwyre") {
+        injectNotification(tab.id, "Saving page...");
+        handleRequest(ingestUrl, { url: tab.url }, (response) => {
+            if (response.success) {
+                injectNotification(tab.id, "✅ Page Saved via MemWyre");
+            } else {
+                injectNotification(tab.id, "❌ Save Failed");
+            }
+        });
+    }
+});
+
+// Helper to show visual feedback (simple alert for now or custom)
+function injectNotification(tabId, message) {
+    chrome.scripting.executeScript({
+        target: { tabId: tabId },
+        func: (msg) => alert(msg), // MVP: Native alert. Ideally custom UI.
+        args: [message]
+    });
+}
 
 // Listen for messages from popup or content script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -176,6 +206,25 @@ async function saveLLMMemory(data) {
     if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || 'Failed to save LLM memory');
+    }
+
+    return await response.json();
+}
+
+async function ingestUrl(data) {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/ingest/url`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+            url: data.url,
+            tags: ['extension', 'web-clip']
+        })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to ingest URL');
     }
 
     return await response.json();

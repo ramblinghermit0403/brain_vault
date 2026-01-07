@@ -132,14 +132,17 @@ async def suggest_tags(
         provider = "openai"
         result = await db.execute(select(AIClient).where(AIClient.user_id == current_user.id, AIClient.provider == provider))
         client = result.scalars().first()
-        
-    if not client:
-        raise HTTPException(status_code=400, detail="No AI provider configured. Please add an API key in Settings.")
-        
-    try:
-        api_key = encryption_service.decrypt(client.encrypted_api_key)
-    except:
-        raise HTTPException(status_code=500, detail="Failed to decrypt API key.")
+    
+    api_key = None
+    if client:
+        try:
+            api_key = encryption_service.decrypt(client.encrypted_api_key)
+        except:
+             # Log warning but continue, maybe Bedrock works
+             pass
+    
+    # We no longer strictly raise HTTPException if client is missing, 
+    # because the system might be using Bedrock (Nova Pro) credentials from the environment.
         
     metadata = await llm_service.extract_metadata(
         content=request.content,

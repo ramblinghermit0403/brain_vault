@@ -246,17 +246,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             div.className = 'result-item';
 
             // Truncate content for display
-            const displayContent = item.content.length > 150 ? item.content.substring(0, 150) + '...' : item.content;
-            const title = item.metadata.title || item.metadata.type;
-            const date = item.metadata.created_at ? new Date(item.metadata.created_at).toLocaleDateString() : '';
+            const MAX_LENGTH = 150;
+            const displayContent = item.content.length > MAX_LENGTH
+                ? item.content.substring(0, MAX_LENGTH) + '...'
+                : item.content;
+
+            // Handle different metadata structures (flat vs nested)
+            let title = "Unknown";
+            let dateStr = "";
+            let score = "";
+
+            if (item.metadata) {
+                // If it's a search result from vector store, metadata is flat
+                // If it's from getDocuments, we manually constructed metadata object
+                title = item.metadata.title || item.metadata.source || "Untitled";
+                if (item.metadata.created_at) {
+                    dateStr = new Date(item.metadata.created_at).toLocaleDateString();
+                }
+            }
+            if (item.score) {
+                score = Math.round(item.score * 100) + '%';
+            }
 
             div.innerHTML = `
-                <div class="result-header" style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                    <span class="result-meta" style="font-weight:600;">${title}</span>
-                    <span class="result-meta">${date}</span>
+                <div class="result-header" style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span class="result-title">${title}</span>
+                    <span class="result-meta">${score || dateStr}</span>
                 </div>
-                <div style="margin-bottom:8px;">${displayContent}</div>
-                <button class="secondary-btn copy-btn" style="padding:4px 8px; font-size:11px; width:auto; margin-top:0;">Copy</button>
+                <div class="result-content" style="margin-bottom:12px;">${displayContent}</div>
+                <button class="secondary-btn copy-btn" style="width:100%; margin-top:0;">Copy to Clipboard</button>
             `;
 
             // Add copy functionality
@@ -264,7 +282,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             copyBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 navigator.clipboard.writeText(item.content);
-                showToast('Copied to clipboard!'); // New Toast
+                showToast('Copied to clipboard!');
             });
 
             container.appendChild(div);

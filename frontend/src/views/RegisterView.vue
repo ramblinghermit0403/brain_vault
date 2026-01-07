@@ -136,11 +136,12 @@ const handleRegister = async () => {
   error.value = '';
   try {
     await authStore.register(email.value, password.value, name.value);
-    // Show success message or auto-login? 
-    // For now, alert and redirect to login as per original flow, but cleaner.
-    // Ideally we'd use a toast notification.
-    toast.success('Registration successful! Please login.');
-    router.push('/login');
+    
+    // Auto-login to streamline onboarding
+    await authStore.login(email.value, password.value);
+    
+    toast.success('Welcome! Let\'s get you set up.');
+    router.push('/onboarding');
   } catch (err) {
     error.value = 'Registration failed. Please try again.';
   } finally {

@@ -14,6 +14,7 @@ from app.models.document import Document, Chunk
 from app.services.vector_store import vector_store
 from app.services.ingestion import ingestion_service
 from app.services.metadata_extraction import metadata_service
+from app.services.retrieval_service import retrieval_service
 from app.db.session import AsyncSessionLocal
 
 # Wrapper to run in background with fresh session
@@ -421,12 +422,24 @@ async def search_documents(
     Semantic search over documents and memories.
     """
     # Use retrieval service for smart search
-    return await retrieval_service.search_memories(
+    # Use retrieval service for smart search
+    results = await retrieval_service.search_memories(
         query=request.query,
         user_id=current_user.id,
         db=db,
         top_k=request.top_k
     )
+    
+    # Filter out non-serializable objects (like SQLAlchemy models)
+    sanitized_results = []
+    for res in results:
+        sanitized_results.append({
+            "text": res["text"],
+            "score": res["score"],
+            "metadata": res["metadata"]
+        })
+        
+    return sanitized_results
 
 from typing import List, Optional
 class ChunkSchema(BaseModel):

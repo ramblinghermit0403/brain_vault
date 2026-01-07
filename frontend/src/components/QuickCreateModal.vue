@@ -150,12 +150,28 @@
         </div>
 
         <!-- Webpage Tab -->
-         <div v-else-if="activeTab === 'webpage'" class="h-64 flex flex-col items-center justify-center text-center">
-             <div class="w-16 h-16 rounded-full bg-gray-50 dark:bg-zinc-800 flex items-center justify-center mb-4 text-gray-500 dark:text-gray-400">
-                 <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+        <!-- Webpage Tab -->
+        <div v-else-if="activeTab === 'webpage'" class="h-64 flex flex-col items-center justify-center text-center space-y-6">
+             <div class="w-full max-w-md">
+                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 text-left">Page URL</label>
+                 <div class="relative">
+                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                         <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                             <path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a2 2 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" />
+                         </svg>
+                     </div>
+                     <input 
+                        v-model="urlInput" 
+                        type="url" 
+                        class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white dark:bg-zinc-800 dark:text-white sm:text-sm" 
+                        placeholder="https://example.com/article"
+                        @keyup.enter="ingest"
+                     />
+                 </div>
+                 <p class="mt-2 text-xs text-gray-500 text-left">
+                     We'll extract the main content and add it to your brain.
+                 </p>
              </div>
-             <h3 class="text-lg font-medium text-gray-900 dark:text-white">Webpage Ingestion</h3>
-             <p class="text-gray-500">Coming soon</p>
         </div>
 
       </div>
@@ -167,12 +183,12 @@
           </button>
           
           <button 
-            v-if="activeTab === 'documents'"
+            v-if="activeTab === 'documents' || activeTab === 'webpage'"
             @click="ingest" 
-            :disabled="!selectedFile"
+            :disabled="activeTab === 'documents' ? !selectedFile : !urlInput"
             class="px-5 py-2 text-sm font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-80 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
           >
-              {{ uploadSuccess ? 'Done' : 'Add Content' }}
+              {{ uploadSuccess ? 'Done' : (activeTab === 'webpage' ? 'Ingest URL' : 'Add Content') }}
           </button>
       </div>
 
@@ -260,26 +276,49 @@ const formatSize = (bytes) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 };
 
+const urlInput = ref('');
+
 const ingest = async () => {
-    if (activeTab.value !== 'documents') {
+    if (activeTab.value === 'youtube') {
         toast.info('Feature coming soon');
         return;
     }
 
-    if (!selectedFile.value) return;
-
     uploading.value = true;
-    const formData = new FormData();
-    formData.append('file', selectedFile.value);
 
     try {
-        const response = await api.post('/documents/upload', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        
-        uploadSuccess.value = true;
-        toast.success('Document ingested successfully');
-        
+        if (activeTab.value === 'webpage') {
+             if (!urlInput.value || !urlInput.value.startsWith('http')) {
+                 toast.error("Please enter a valid URL");
+                 uploading.value = false;
+                 return;
+             }
+             
+             await api.post('/ingest/url', { 
+                 url: urlInput.value,
+                 tags: ['web-import']
+             });
+             
+             uploadSuccess.value = true;
+             toast.success('Webpage queued for ingestion');
+        } 
+        else if (activeTab.value === 'documents') {
+            if (!selectedFile.value) {
+                uploading.value = false;
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', selectedFile.value);
+
+            await api.post('/documents/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            
+            uploadSuccess.value = true;
+            toast.success('Document uploaded successfully');
+        }
+
         // Wait a bit then close
         setTimeout(() => {
             close();
@@ -288,7 +327,8 @@ const ingest = async () => {
         }, 1000);
 
     } catch (error) {
-        toast.error('Upload failed: ' + (error.response?.data?.detail || error.message));
+        console.error(error);
+        toast.error('Operation failed: ' + (error.response?.data?.detail || error.message));
     } finally {
         uploading.value = false;
     }

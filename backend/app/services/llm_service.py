@@ -78,30 +78,24 @@ class LLMService:
         Extract Title, Summary, and Tags from content using LLM.
         """
         # Quick heuristic to avoid burning tokens on tiny content
-        # Quick heuristic to avoid burning tokens on tiny content
         if len(content) < 3:
             return {"title": "Short Note", "tags": [], "summary": content}
-
-        try:
-            # Check configured provider for background jobs
-            # We need a fallback or user provided key. 
-            # In the router, we will pass the key.
-            target_key = api_key
-            if not target_key: 
-                print("LLM Service: No API Key provided for metadata extraction")
-                return {} 
-                
-            print(f"LLM Service: Extracting metadata for content (len={len(content)})") 
-
-            import json
-            import re
             
-            # Context window management for existing tags 
-            tag_context_str = ", ".join(existing_tags[:50])
-            if len(existing_tags) > 50:
-                tag_context_str += "..."
-            
-            system_instruction = f"""You are the 'MemWyre' AI archivist.
+        # Check for user key, but allow Fallback to Bedrock (System Credentials)
+        target_key = api_key
+        
+        # Log intent
+        print(f"LLM Service: Extracting metadata for content (len={len(content)})") 
+
+        import json
+        import re
+        
+        # Context window management for existing tags 
+        tag_context_str = ", ".join(existing_tags[:50])
+        if len(existing_tags) > 50:
+            tag_context_str += "..."
+        
+        system_instruction = f"""You are the 'MemWyre' AI archivist.
 Analyze the user's content and extract structured metadata.
 
 Required Output (JSON):
@@ -126,58 +120,63 @@ Rules for Tags:
 Existing Tags Context:
 [{tag_context_str}]"""
 
-            user_message = f"""Content to Analyze:
+        user_message = f"""Content to Analyze:
 {content[:4000]}"""
-            
-            # Generate
-            text = ""
-            
-            # 1. Try Bedrock (Nova Pro) First
-            used_bedrock = False
-            try:
-                 # Default to Nova Pro
-                 llm = ChatBedrock(model_id="apac.amazon.nova-pro-v1:0", model_kwargs={"temperature": 0})
-                 messages = [
-                     SystemMessage(content=system_instruction),
-                     HumanMessage(content=user_message)
-                 ]
-                 res = await llm.ainvoke(messages)
-                 text = res.content
-                 used_bedrock = True
-            except Exception as e:
-                 # print(f"Bedrock metadata extraction failed: {e}")
-                 pass
-            
-            if not used_bedrock:
-                if target_key and target_key.startswith("sk-"): # OpenAI
-                    llm = ChatOpenAI(api_key=target_key, model="gpt-3.5-turbo", temperature=0)
-                    messages = [
-                        SystemMessage(content=system_instruction),
-                        HumanMessage(content=user_message)
-                    ]
-                    res = await llm.ainvoke(messages)
-                    text = res.content
-                elif target_key: # Assume Gemini
-                    genai.configure(api_key=target_key)
+        
+        # Generate
+        text = ""
+        
+        # 1. Try Bedrock (Nova Pro) First - Preferred and often System Configured
+        used_bedrock = False
+        try:
+             # Default to Nova Pro
+             llm = ChatBedrock(model_id="apac.amazon.nova-pro-v1:0", model_kwargs={"temperature": 0})
+             messages = [
+                 SystemMessage(content=system_instruction),
+                 HumanMessage(content=user_message)
+             ]
+             res = await llm.ainvoke(messages)
+             text = res.content
+             used_bedrock = True
+        except Exception as e:
+             # Only print error if we have no other fallback or for debugging
+             # print(f"Bedrock metadata extraction failed: {e}")
+             pass
+        
+        if not used_bedrock:
+            if not target_key:
+                 print("LLM Service: Bedrock failed and no API Key provided for fallback.")
+                 return {} # No way to proceed
+
+            if target_key.startswith("sk-"): # OpenAI
+                llm = ChatOpenAI(api_key=target_key, model="gpt-3.5-turbo", temperature=0)
+                messages = [
+                    SystemMessage(content=system_instruction),
+                    HumanMessage(content=user_message)
+                ]
+                res = await llm.ainvoke(messages)
+                text = res.content
+            elif target_key: # Assume Gemini
+                genai.configure(api_key=target_key)
+                try:
+                    # Try gemini-2.5-flash w/ JSON mode
                     try:
-                        # Try gemini-2.5-flash w/ JSON mode
-                        try:
-                            model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
-                            combined_prompt = f"{system_instruction}\n\n{user_message}"
-                            # Check if model supports it (response_mime_type)
-                            res = model.generate_content(combined_prompt)
-                            text = res.text
-                        except Exception as e_model:
-                            print(f"Gemini 2.5 failed ({e_model}), trying gemini-2.5-flash fallback")
-                            model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
-                            combined_prompt = f"{system_instruction}\n\n{user_message}"
-                            res = model.generate_content(combined_prompt)
-                            text = res.text
-                    except Exception as e:
-                        print(f"Gemini generation failed: {e}")
-                        return {}
-                else: 
-                     return {}
+                        model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
+                        combined_prompt = f"{system_instruction}\n\n{user_message}"
+                        # Check if model supports it (response_mime_type)
+                        res = model.generate_content(combined_prompt)
+                        text = res.text
+                    except Exception as e_model:
+                        print(f"Gemini 2.5 failed ({e_model}), trying gemini-2.5-flash fallback")
+                        model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
+                        combined_prompt = f"{system_instruction}\n\n{user_message}"
+                        res = model.generate_content(combined_prompt)
+                        text = res.text
+                except Exception as e:
+                    print(f"Gemini generation failed: {e}")
+                    return {}
+            else: 
+                 return {}
 
             # Clean JSON
             text = text.replace("```json", "").replace("```", "").strip()
@@ -197,10 +196,6 @@ Existing Tags Context:
                     except:
                         pass
                 return {}
-            
-        except Exception as e:
-            print(f"Metadata extraction failed: {e}")
-            return {}
 
     async def generate_chunk_enrichment(self, content: str, api_key: Optional[str] = None) -> dict:
         """
