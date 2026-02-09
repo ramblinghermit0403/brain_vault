@@ -1,76 +1,103 @@
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
+    
     <!-- Backdrop -->
-    <div @click="close" class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity"></div>
+    <div class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity" @click="close"></div>
 
-    <!-- Modal Card -->
-    <div class="relative w-full max-w-2xl h-[650px] bg-white dark:bg-app rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-gray-700">
+    <!-- Modal Panel -->
+    <div class="relative w-[700px] h-[600px] overflow-hidden rounded-xl bg-white dark:bg-zinc-900 text-left shadow-2xl transition-all flex flex-col">
+      
+      <!-- Close Button -->
+      <button @click="close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors z-10">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <!-- Header -->
+      <div class="px-8 pt-8 pb-4">
+        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">Daily Review</h3>
+        <p class="text-gray-500 dark:text-gray-400 text-sm">Review your memories to reinforce learning.</p>
+      </div>
+
+      <!-- Main Content -->
+      <div class="flex-1 overflow-y-auto px-8 pb-4 custom-scrollbar">
         
-        <!-- Header -->
-        <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-white/80 dark:bg-app/80 backdrop-blur z-10">
-           <h1 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <svg class="w-6 h-6 text-black dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-              Daily Review
-           </h1>
-           <button @click="close" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 bg-gray-100 dark:bg-elevated rounded-full transition-colors">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-           </button>
+        <!-- Loading State -->
+        <div v-if="loading" class="h-full flex flex-col items-center justify-center text-center">
+            <LoadingLogo size="lg" />
+            <p class="text-gray-400 text-sm mt-4">Curating fresh memories...</p>
         </div>
 
-        <!-- Content Area -->
-        <div class="flex-1 overflow-y-auto overflow-x-hidden p-6 relative bg-gray-50 dark:bg-surface/50">
-       <div v-if="loading" class="flex flex-col items-center justify-center p-12">
-          <LoadingLogo size="xl" />
-          <div class="text-gray-500 mt-4">Curating your review...</div>
-       </div>
-      
-      <div v-else-if="memories.length === 0 || isCompleted" class="flex flex-col items-center justify-center h-full text-center max-w-md mx-auto">
-         <div class="p-4 bg-green-100 dark:bg-green-900/30 rounded-full mb-6 text-green-600 dark:text-green-400">
-            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-         </div>
-         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">All Caught Up!</h2>
-         <p class="text-gray-500 dark:text-text-secondary mb-8">You've reviewed all {{ memories.length }} memories for today.</p>
-         <button @click="close" class="px-6 py-3 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition">Return to Dashboard</button>
+        <!-- Completion State -->
+        <div v-else-if="memories.length === 0 || isCompleted" class="h-full flex flex-col items-center justify-center text-center space-y-6">
+             <div class="p-4 rounded-full bg-gray-50 dark:bg-zinc-800 text-gray-900 dark:text-white">
+                 <svg class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                 </svg>
+             </div>
+             <h3 class="text-xl font-bold text-gray-900 dark:text-white">All Caught Up!</h3>
+             <p class="text-gray-500 dark:text-gray-400 max-w-xs mx-auto">You've reviewed all queued memories for today. Great job keeping your knowledge fresh.</p>
+             <button @click="close" class="mt-2 px-6 py-2 bg-black text-white dark:bg-white dark:text-black rounded-lg hover:opacity-80 transition-colors font-medium">
+                 Return to Dashboard
+             </button>
+        </div>
+
+        <!-- Memory Review View -->
+        <div v-else class="space-y-6">
+            <!-- Progress Indicator -->
+            <div class="flex items-center justify-between text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                <span>Memory {{ currentIndex + 1 }} of {{ memories.length }}</span>
+                <span :class="currentMemory.reason === 'recent' ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'">
+                    {{ currentMemory.reason === 'recent' ? 'Fresh' : 'Rediscovery' }}
+                </span>
+            </div>
+
+            <!-- Content Card -->
+            <div class="prose dark:prose-invert max-w-none">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">{{ currentMemory.title }}</h2>
+                <div class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+                    {{ currentMemory.content }}
+                </div>
+            </div>
+
+            <!-- Tags -->
+            <div v-if="currentMemory.tags && currentMemory.tags.length" class="pt-4 border-t border-gray-100 dark:border-zinc-800 flex flex-wrap gap-2">
+                 <span v-for="tag in currentMemory.tags" :key="tag" class="px-2 py-1 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-300 text-xs rounded-md">
+                   #{{ tag }}
+                 </span>
+            </div>
+        </div>
+
       </div>
 
-      <div v-else class="w-full max-w-2xl mx-auto flex flex-col h-full justify-center">
-         <!-- Card Stack Effect -->
-         <div class="bg-white dark:bg-surface rounded-2xl shadow-sm border border-gray-200 dark:border-border overflow-hidden flex flex-col min-h-[400px]">
-            <!-- Badge -->
-            <div class="px-6 py-3 border-b border-gray-100 dark:border-border flex justify-between items-center bg-gray-50/50 dark:bg-white/5">
-               <span 
-                 class="px-2 py-1 text-xs font-medium rounded-md uppercase tracking-wide"
-                 :class="currentMemory.reason === 'recent' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'"
-               >
-                 {{ currentMemory.reason === 'recent' ? 'Fresh Memory' : 'Rediscover' }}
-               </span>
-               <span class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                 {{ currentIndex + 1 }} / {{ memories.length }}
-               </span>
-            </div>
-            
-            <div class="flex-1 p-6 md:p-8 overflow-y-auto max-h-[60vh]">
-               <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">{{ currentMemory.title }}</h2>
-               <div class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                  {{ currentMemory.content }}
-               </div>
-               
-               <div v-if="currentMemory.tags && currentMemory.tags.length" class="mt-6 flex flex-wrap gap-2">
-                 <span v-for="tag in currentMemory.tags" :key="tag" class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">#{{ tag }}</span>
-               </div>
-            </div>
-            
-            <div class="bg-gray-50 dark:bg-gray-800/50 p-4 flex justify-between items-center border-t border-gray-100 dark:border-border">
-               <button @click="prev" :disabled="currentIndex === 0" class="text-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-30 transition-colors">
-                  Previous
-               </button>
-               <button @click="next" class="px-6 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition">
-                  {{ isLast ? 'Finish' : 'Next' }}
-               </button>
-            </div>
-         </div>
+      <!-- Footer -->
+      <div v-if="!loading && !isCompleted && memories.length > 0" class="border-t border-gray-100 dark:border-zinc-800 px-8 py-4 flex justify-between gap-3 bg-gray-50 dark:bg-zinc-900/50">
+          <button 
+            @click="prev" 
+            :disabled="currentIndex === 0"
+            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 border border-gray-300 dark:border-zinc-700 rounded-lg hover:bg-white dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+              </svg>
+              Previous
+          </button>
+          
+          <button 
+            @click="next" 
+            class="px-6 py-2 text-sm font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-80 rounded-lg transition-colors shadow-sm flex items-center gap-2"
+          >
+              {{ isLast ? 'Finish Review' : 'Next Memory' }}
+              <svg v-if="!isLast" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+              <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+          </button>
       </div>
-     </div>
+
     </div>
   </div>
 </template>

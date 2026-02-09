@@ -41,11 +41,15 @@ class RetrievalService:
             # _search_state needs int user_id for SQL, _search_semantic needs int or str?
             # Let's look at signatures. _search_state(user_id: int). _search_semantic(user_id: int).
             # So pass user_id (int) to both.
-            state_task = self._search_state(query, user_id, db, top_k=3, pre_fetched=unified_results["facts"])
-            semantic_task = self._search_semantic(query, user_id, db, top_k=top_k, pre_fetched=unified_results["memories"])
+            # state_task = self._search_state(query, user_id, db, top_k=3, pre_fetched=unified_results["facts"])
+            # semantic_task = self._search_semantic(query, user_id, db, top_k=top_k, pre_fetched=unified_results["memories"])
             
-            results = await asyncio.gather(state_task, semantic_task)
-            state_results, semantic_results = results
+            # fix: AsyncSession cannot be shared across concurrent tasks. Run sequentially.
+            state_results = await self._search_state(query, user_id, db, top_k=3, pre_fetched=unified_results["facts"])
+            semantic_results = await self._search_semantic(query, user_id, db, top_k=top_k, pre_fetched=unified_results["memories"])
+            
+            # results = await asyncio.gather(state_task, semantic_task)
+            # state_results, semantic_results = results
             
             return state_results + semantic_results
 
@@ -463,7 +467,15 @@ class RetrievalService:
                 meta["summary"] = chunk.summary
                 meta["generated_qas"] = chunk.generated_qas
                 meta["trust_score"] = chunk.trust_score
-                meta["memory_id"] = chunk.id
+                if chunk.memory_id:
+                    meta["memory_id"] = chunk.memory_id
+                    # Clean up vector store artifacts if any
+                    if "document_id" in meta: del meta["document_id"]
+                elif chunk.document_id:
+                    meta["document_id"] = chunk.document_id
+                    if "memory_id" in meta: del meta["memory_id"]
+
+                meta["chunk_id"] = chunk.id
                 meta["recency_boost"] = round(recency_mod, 2)
                 
                 display_text = chunk.text

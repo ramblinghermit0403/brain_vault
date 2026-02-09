@@ -300,3 +300,7 @@ MIT License - feel free to use and modify.
 - Built with assistance from Antigravity AI
 - MCP specification by Anthropic
 - Inspired by personal knowledge management best practices
+
+## Run Celery Worker
+```bash
+uv run celery -A app.celery_app worker --loglevel=info -P threads --concurrency 5

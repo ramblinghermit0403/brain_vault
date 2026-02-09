@@ -6,9 +6,9 @@
       <!-- Legend (Positioned absolutely over graph) -->
       <div class="absolute top-4 left-4 z-10 pointer-events-auto bg-white/80 dark:bg-surface/80 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
         <span class="flex items-center gap-2">
-          <span class="w-3 h-3 rounded-full bg-black dark:bg-white"></span> Memory
+          <span class="w-3 h-3 rounded-full bg-blue-500"></span> Memory
           <span class="w-3 h-3 rounded-full bg-emerald-500 ml-2"></span> Tag
-          <span class="w-3 h-3 rounded-full bg-gray-400 ml-2"></span> Document
+          <span class="w-3 h-3 rounded-full bg-amber-500 ml-2"></span> Document
         </span>
       </div>
 
@@ -16,7 +16,7 @@
     <div ref="container" class="w-full h-full">
       <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 z-20 backdrop-blur-sm">
         <div class="flex flex-col items-center">
-          <LoadingLogo size="xl" class="mb-4" />
+          <LoadingLogo size="lg" class="mb-4" />
           <p class="text-gray-500 dark:text-gray-400 animate-pulse">Mapping your brain...</p>
         </div>
       </div>
@@ -32,7 +32,7 @@
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" /></svg>
       </button>
       <button @click="handleResetZoom" class="p-2 bg-white dark:bg-surface rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" title="Reset View">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" /></svg>
       </button>
     </div>
 
@@ -178,13 +178,13 @@ const initGraph = async () => {
   };
 
   if (themeStore.isDark) {
-    createGradient("grad-memory", "#ffffff", "#e5e5e5"); // White/Gray for nodes in dark mode
-    createGradient("grad-tag", "#d4d4d8", "#a1a1aa");    // Light Gray for tags
-    createGradient("grad-doc", "#9ca3af", "#4b5563");    // Gray for docs
+    createGradient("grad-memory", "#60a5fa", "#3b82f6"); // Blue for Memories
+    createGradient("grad-tag", "#34d399", "#059669");    // Emerald for Tags
+    createGradient("grad-doc", "#fbbf24", "#d97706");    // Amber for Docs
   } else {
-    createGradient("grad-memory", "#000000", "#333333"); // Black/Dark Gray for nodes in light mode
-    createGradient("grad-tag", "#52525b", "#27272a");    // Dark Gray for tags
-    createGradient("grad-doc", "#d1d5db", "#6b7280");
+    createGradient("grad-memory", "#2563eb", "#1d4ed8"); // Darker Blue for Light Mode
+    createGradient("grad-tag", "#059669", "#047857");    // Darker Emerald
+    createGradient("grad-doc", "#d97706", "#b45309");    // Darker Amber
   }
 
   // Zoom setup
@@ -196,21 +196,29 @@ const initGraph = async () => {
     });
   svgSelection.call(zoomBehavior);
 
+  // Initialize node positions at center (required for pre-computation to work)
+  data.nodes.forEach(node => {
+    node.x = width.value / 2 + (Math.random() - 0.5) * 50;
+    node.y = height.value / 2 + (Math.random() - 0.5) * 50;
+  });
+
   // Simulation setup
   simulation = d3.forceSimulation(data.nodes)
     .force("link", d3.forceLink(data.links).id(d => d.id).distance(120))
-    .force("charge", d3.forceManyBody().strength(-400))
+    .force("charge", d3.forceManyBody().strength(-300)) // Reduced repulsion slightly
     .force("center", d3.forceCenter(width.value / 2, height.value / 2))
+    .force("x", d3.forceX(width.value / 2).strength(0.05)) // Gentle gravity towards X center
+    .force("y", d3.forceY(height.value / 2).strength(0.05)) // Gentle gravity towards Y center
     .force("collide", d3.forceCollide().radius(d => d.radius + 10).iterations(2));
 
   // Links
   const link = g.append("g")
-    .attr("stroke", themeStore.isDark ? "#4b5563" : "#e5e7eb")
-    .attr("stroke-opacity", 0.6)
+    .attr("stroke", themeStore.isDark ? "#4b5563" : "#94a3b8") // Darker gray (Slate 400) for light mode
+    .attr("stroke-opacity", 0.8) // Increased opacity
     .selectAll("line")
     .data(data.links)
     .join("line")
-    .attr("stroke-width", 1.5)
+    .attr("stroke-width", 2) // Increased width
     .attr("class", "link transition-opacity duration-300");
 
   // Nodes
@@ -276,7 +284,7 @@ const initGraph = async () => {
           connectedNodeIds.add(l.target.id);
           return themeStore.isDark ? "#ffffff" : "#000000";
         }
-        return themeStore.isDark ? "#4b5563" : "#e5e7eb";
+        return themeStore.isDark ? "#4b5563" : "#94a3b8";
       })
       .style("stroke-opacity", l => (l.source.id === d.id || l.target.id === d.id) ? 1 : 0.1);
 
@@ -294,8 +302,8 @@ const initGraph = async () => {
     })
     .on("mouseout", () => {
       // Reset styles
-      link.style("stroke", themeStore.isDark ? "#4b5563" : "#e5e7eb")
-          .style("stroke-opacity", 0.6);
+      link.style("stroke", themeStore.isDark ? "#4b5563" : "#94a3b8")
+          .style("stroke-opacity", 0.8);
       node.style("opacity", 1);
       labels.style("opacity", 0.8);
       
@@ -310,6 +318,25 @@ const initGraph = async () => {
         router.push(`/editor/${d.id}`);
       }
     });
+
+  // Pre-run simulation to skip initial animation (reduces lag on low-config PCs)
+  simulation.stop();
+  for (let i = 0; i < 300; i++) {
+    simulation.tick();
+  }
+
+  // Update positions once after pre-computation
+  link
+    .attr("x1", d => d.source.x)
+    .attr("y1", d => d.source.y)
+    .attr("x2", d => d.target.x)
+    .attr("y2", d => d.target.y);
+
+  node.attr("transform", d => `translate(${d.x},${d.y})`);
+  labels.attr("x", d => d.x).attr("y", d => d.y);
+
+  // Resume simulation for interactivity (drag, etc.) but with low alpha
+  simulation.alpha(0.1).restart();
 
   simulation.on("tick", () => {
     link

@@ -118,43 +118,68 @@
                     </div>
                </div>
                
-               <!-- Add New Key -->
+               <!-- Add New Key (DISABLED) -->
                <div class="border-t border-gray-100 dark:border-border pt-6">
                     <h4 class="text-sm font-medium text-gray-900 dark:text-text-primary mb-4">Add New Connection</h4>
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-4">
-                      <div>
-                        <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Provider</label>
-                        <div class="relative">
-                            <select v-model="newKey.provider" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white appearance-none">
-                              <option value="openai">OpenAI</option>
-                              <option value="anthropic">Anthropic</option>
-                              <option value="gemini">Google Gemini</option>
-                            </select>
-                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-400">
-                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    
+                    <div class="rounded-md bg-yellow-50 dark:bg-yellow-900/20 p-4 border border-yellow-200 dark:border-yellow-700/30">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Feature Disabled</h3>
+                                <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+                                    <p>User API Key management is currently disabled by the administrator. Please rely on system-configured keys.</p>
+                                </div>
                             </div>
                         </div>
-                      </div>
-                      <div>
-                        <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">API Key</label>
-                        <input type="password" v-model="newKey.api_key" class="block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white py-2 px-3" placeholder="sk-..." />
-                      </div>
                     </div>
-                    
-                    <div class="flex items-center gap-6 mb-6">
-                       <label class="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" v-model="newKey.permissions.read" class="rounded border-gray-300 text-black shadow-sm focus:border-black focus:ring focus:ring-black focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600">
-                        <span class="ml-2 text-sm text-gray-600 dark:text-gray-300">Allow Read</span>
-                      </label>
-                      <label class="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" v-model="newKey.permissions.write" class="rounded border-gray-300 text-black shadow-sm focus:border-black focus:ring focus:ring-black focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600">
-                        <span class="ml-2 text-sm text-gray-600 dark:text-gray-300">Allow Write</span>
-                      </label>
+
+                    <!-- Hidden Form -->
+                    <div v-if="false">
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-4">
+                          <div>
+                            <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Provider</label>
+                            <div class="relative">
+                                <select v-model="newKey.provider" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white appearance-none">
+                                  <option value="openai">OpenAI</option>
+                                  <option value="anthropic">Anthropic</option>
+                                  <option value="gemini">Google Gemini</option>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-400">
+                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                </div>
+                            </div>
+                          </div>
+                          <div>
+                            <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">API Key</label>
+                            <input type="password" v-model="newKey.api_key" class="block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white py-2 px-3" placeholder="sk-..." />
+                          </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-6 mb-6">
+                           <label class="inline-flex items-center cursor-pointer">
+                            <input type="checkbox" v-model="newKey.permissions.read" class="rounded border-gray-300 text-black shadow-sm focus:border-black focus:ring focus:ring-black focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600">
+                            <span class="ml-2 text-sm text-gray-600 dark:text-gray-300">Allow Read</span>
+                          </label>
+                          <label class="inline-flex items-center cursor-pointer">
+                            <input type="checkbox" v-model="newKey.permissions.write" class="rounded border-gray-300 text-black shadow-sm focus:border-black focus:ring focus:ring-black focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600">
+                            <span class="ml-2 text-sm text-gray-600 dark:text-gray-300">Allow Write</span>
+                          </label>
+                        </div>
+                        
+                        <button 
+                            @click="addKey" 
+                            :disabled="addingKey"
+                            class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-black dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black dark:focus:ring-white transition-colors disabled:opacity-70 disabled:cursor-not-allowed gap-2"
+                        >
+                            <LoadingLogo v-if="addingKey" size="sm" class="w-4 h-4" :isWhite="true" />
+                            {{ addingKey ? 'Connecting...' : 'Connect Provider' }}
+                        </button>
                     </div>
-                    
-                    <button @click="addKey" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-black dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black dark:focus:ring-white transition-colors">
-                        Connect Provider
-                    </button>
                </div>
                
                <div class="mt-10 pt-8 border-t border-gray-100 dark:border-border">
@@ -180,18 +205,28 @@
               <p class="text-sm text-gray-500 dark:text-text-secondary mb-6">Download your entire knowledge base in your preferred format.</p>
               
               <div class="flex space-x-4">
-                <button @click="exportData('json')" class="inline-flex items-center px-4 py-3 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors group">
-                  <svg class="w-8 h-8 mr-3 text-gray-400 group-hover:text-black dark:group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                <button 
+                  @click="exportData('json')" 
+                  :disabled="exporting"
+                  class="inline-flex items-center px-4 py-3 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors group disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <LoadingLogo v-if="exporting" size="md" class="mr-3" />
+                  <svg v-else class="w-8 h-8 mr-3 text-gray-400 group-hover:text-black dark:group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                   <div class="text-left">
                       <div class="text-xs text-gray-500 uppercase font-semibold">Format</div>
-                      <div class="text-base font-bold">JSON</div>
+                      <div class="text-base font-bold">{{ exporting ? 'Exporting...' : 'JSON' }}</div>
                   </div>
                 </button>
-                <button @click="exportData('md')" class="inline-flex items-center px-4 py-3 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors group">
-                   <svg class="w-8 h-8 mr-3 text-gray-400 group-hover:text-black dark:group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                <button 
+                  @click="exportData('md')" 
+                  :disabled="exporting"
+                  class="inline-flex items-center px-4 py-3 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors group disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                   <LoadingLogo v-if="exporting" size="md" class="mr-3" />
+                   <svg v-else class="w-8 h-8 mr-3 text-gray-400 group-hover:text-black dark:group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                   <div class="text-left">
                       <div class="text-xs text-gray-500 uppercase font-semibold">Format</div>
-                      <div class="text-base font-bold">Markdown</div>
+                      <div class="text-base font-bold">{{ exporting ? 'Exporting...' : 'Markdown' }}</div>
                   </div>
                 </button>
               </div>
@@ -204,6 +239,7 @@
       title="Remove Key"
       message="Are you sure you want to remove this API key? This action cannot be undone."
       confirm-text="Remove"
+      :loading="deletingKey"
       @confirm="confirmDeleteKey"
       @cancel="showDeleteModal = false"
     />
@@ -220,6 +256,8 @@ import ThemeToggle from '../components/ThemeToggle.vue';
 import ConfirmationModal from '../components/ConfirmationModal.vue';
 import { useToast } from 'vue-toastification';
 
+import LoadingLogo from '@/components/common/LoadingLogo.vue';
+
 const authStore = useAuthStore();
 const router = useRouter();
 const toast = useToast();
@@ -233,6 +271,11 @@ const newKey = ref({
   permissions: { read: true, write: false, auto_save: false }
 });
 const tokenCopied = ref(false);
+
+// Loading States
+const addingKey = ref(false);
+const deletingKey = ref(false);
+const exporting = ref(false);
 
 const loadSettings = async () => {
   try {
@@ -266,6 +309,7 @@ const loadKeys = async () => {
 
 const addKey = async () => {
   if (!newKey.value.api_key) return toast.error("API Key required");
+  addingKey.value = true;
   try {
     await api.post('/user/llm-keys', newKey.value);
     toast.success("Key added");
@@ -273,6 +317,8 @@ const addKey = async () => {
     loadKeys();
   } catch (err) {
     toast.error("Failed to add key");
+  } finally {
+    addingKey.value = false;
   }
 };
 
@@ -286,19 +332,22 @@ const deleteKey = (id) => {
 
 const confirmDeleteKey = async () => {
     if (!keyToDelete.value) return;
+    deletingKey.value = true;
     try {
         await api.delete(`/user/llm-keys/${keyToDelete.value}`);
         toast.success("Key removed");
         loadKeys();
+        showDeleteModal.value = false;
+        keyToDelete.value = null;
     } catch (err) {
         toast.error("Failed to remove key");
     } finally {
-        showDeleteModal.value = false;
-        keyToDelete.value = null;
+        deletingKey.value = false;
     }
 };
 
 const exportData = async (format) => {
+  exporting.value = true;
   try {
     const response = await api.get(`/export/${format}`, { responseType: 'blob' });
     const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -310,6 +359,8 @@ const exportData = async (format) => {
     toast.success(`Exported as ${format.toUpperCase()}`);
   } catch (error) {
     toast.error('Export failed');
+  } finally {
+    exporting.value = false;
   }
 };
 

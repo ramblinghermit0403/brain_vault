@@ -4,6 +4,7 @@ from app.models.memory import Memory
 from app.models.client import AIClient
 from app.core.encryption import encryption_service
 from app.services.llm_service import llm_service
+from app.core.config import settings
 import asyncio
 
 from app.models.document import Document
@@ -29,6 +30,7 @@ class MetadataExtractionService:
                 return
 
             # 2. Fetch User Keys (Try Gemini first (fast/cheap), then OpenAI)
+            print(f"DEBUG: Processing record: ID={record.id}, Title='{record.title}', Type={doc_type}")
             provider = "gemini" 
             result = await db.execute(select(AIClient).where(
                 AIClient.user_id == user_id, 
@@ -52,11 +54,21 @@ class MetadataExtractionService:
                 except Exception as e:
                     print(f"Failed to decrypt key: {e}")
 
+            
+            # Fallback to System Keys if User Key not found
             if not api_key:
-                print("No suitable API key found for metadata extraction")
-                return
+                print("Metadata Extraction: No User API Key found. Checking System Keys...")
+                if settings.GEMINI_API_KEY:
+                    api_key = settings.GEMINI_API_KEY
+                    provider = "gemini (system)"
+                elif settings.OPENAI_API_KEY:
+                    api_key = settings.OPENAI_API_KEY
+                    provider = "openai (system)"
+                else:
+                    print("Metadata Extraction: No System API Key found either.")
+                    return
 
-            print(f"Metadata Extraction: Using provider {provider} for user {user_id}")
+            print(f"Metadata Extraction: Using provider {provider}")
 
             # 3. Get Existing Tags (for context)
             existing_tags = []
@@ -94,7 +106,19 @@ class MetadataExtractionService:
             # 6. Update Record
             tags_updated = False
             # Only update title if generic (Untitled)
-            if metadata and metadata.get("title") and (not record.title or record.title == "Untitled" or record.title.startswith("Memory from") or record.title.startswith("scanned_")):
+            # Only update title if generic (Untitled) - Case Insensitive Check
+            current_title_lower = (record.title or "").lower().strip()
+            print(f"DEBUG: Current Title Lower: '{current_title_lower}'")
+            
+            should_update_title = False
+            if not record.title: should_update_title = True
+            elif record.title == "Untitled": should_update_title = True
+            elif current_title_lower.startswith("memory from"): should_update_title = True
+            elif current_title_lower.startswith("scanned_"): should_update_title = True
+            
+            print(f"DEBUG: Should Update Title? {should_update_title}")
+
+            if metadata and metadata.get("title") and should_update_title:
                  print(f"Metadata Extraction: Updating title to {metadata['title']}")
                  record.title = metadata["title"]
             
@@ -121,7 +145,7 @@ class MetadataExtractionService:
             # Broadcast to frontend
             # Publish update via Redis (Celery -> Uvicorn)
             try:
-                from app.core.config import settings
+                # settings is already imported globally
                 from redis import asyncio as aioredis
                 import json
                 

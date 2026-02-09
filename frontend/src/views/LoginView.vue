@@ -68,7 +68,7 @@
                     <svg v-if="!loading" class="h-5 w-5 text-gray-500 group-hover:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                     </svg>
-                    <LoadingLogo v-else size="sm" class="h-5 w-5" />
+                    <LoadingLogo v-else size="base" class="" />
                 </span>
                 {{ loading ? 'Authenticating...' : 'Continue' }}
                 </button>

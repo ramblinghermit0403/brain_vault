@@ -33,8 +33,23 @@
               </div>
             </div>
             <div class="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-              <button type="button" class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto" @click="confirm">{{ confirmText }}</button>
-              <button type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-800 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 sm:mt-0 sm:w-auto" @click="cancel">{{ cancelText }}</button>
+              <button 
+                type="button" 
+                class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2" 
+                @click="confirm"
+                :disabled="loading"
+              >
+                <LoadingLogo v-if="loading" size="sm" class="text-white" :isWhite="true" />
+                {{ loading ? 'Processing...' : confirmText }}
+              </button>
+              <button 
+                type="button" 
+                class="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-800 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 sm:mt-0 sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed" 
+                @click="cancel"
+                :disabled="loading"
+              >
+                {{ cancelText }}
+              </button>
             </div>
           </div>
         </div>
@@ -44,6 +59,8 @@
 </template>
 
 <script setup>
+import LoadingLogo from '@/components/common/LoadingLogo.vue';
+
 defineProps({
   isOpen: {
     type: Boolean,
@@ -64,6 +81,10 @@ defineProps({
   cancelText: {
     type: String,
     default: 'Cancel'
+  },
+  loading: {
+    type: Boolean,
+    default: false
   }
 });
 

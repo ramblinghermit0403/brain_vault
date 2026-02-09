@@ -1,0 +1,42 @@
+services:
+  backend:
+    build: ./backend
+    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+    environment:
+      - CELERY_BROKER_URL=redis://host.docker.internal:6379/0
+      - REDIS_URL=redis://host.docker.internal:6379/0
+      - DATABASE_URL=postgresql://postgres:Denmarks123$@host.docker.internal/brain-vault
+    env_file:
+      - ./backend/.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+  celery_worker:
+    build: ./backend
+    command: uv run celery -A app.celery_app worker --loglevel=info
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+    environment:
+      - CELERY_BROKER_URL=redis://host.docker.internal:6379/0
+      - REDIS_URL=redis://host.docker.internal:6379/0
+      - DATABASE_URL=postgresql://postgres:Denmarks123$@host.docker.internal/brain-vault
+    env_file:
+      - ./backend/.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

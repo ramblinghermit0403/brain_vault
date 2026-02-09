@@ -1,4 +1,5 @@
 from typing import List, Any
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -6,6 +7,9 @@ import shutil
 import os
 import uuid
 from datetime import datetime
+import asyncio
+import aiofiles
+from functools import partial
 import json
 
 from app.api import deps
@@ -57,6 +61,8 @@ def extract_text_from_file(file_path: str, file_type: str) -> str:
         print(f"Error extracting text: {e}")
     return text
 
+    return text
+
 @router.post("/upload", response_model=Any)
 async def upload_document(
     background_tasks: BackgroundTasks,
@@ -71,16 +77,39 @@ async def upload_document(
     if file_ext not in ["pdf", "docx", "txt", "md", "html"]:
         raise HTTPException(status_code=400, detail="Unsupported file type")
     
-    # Save file temporarily
+    # Save file temporarily (Async)
     file_path = os.path.join(UPLOAD_DIR, f"{uuid.uuid4()}.{file_ext}")
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    try:
+        async with aiofiles.open(file_path, 'wb') as out_file:
+            while content := await file.read(1024 * 1024):  # Read in 1MB chunks
+                await out_file.write(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save upload: {e}")
         
-    # Extract Text
-    text = extract_text_from_file(file_path, file_ext)
-    if not text.strip():
-        os.remove(file_path)
+    # Extract Text (Run in Executor to avoid blocking)
+    loop = asyncio.get_event_loop()
+    try:
+        text = await loop.run_in_executor(None, extract_text_from_file, file_path, file_ext)
+    except Exception as e:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        print(f"Extraction Error: {e}")
         raise HTTPException(status_code=400, detail="Could not extract text from file")
+        
+    if not text.strip():
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        raise HTTPException(status_code=400, detail="Could not extract text from file (empty)")
+        
+    # Cleanup file immediately after extraction? 
+    # Or keep it? The original code didn't remove it explicitly unless error/cleanup.
+    # We should probably keep it if we want to support download later, but for now we remove to save space?
+    # Original code didn't show removal logic except in error block or verify script.
+    # Let's clean it up to avoid clutter since we store text.
+    try:
+         os.remove(file_path)
+    except:
+         pass
         
     # Create Document Record
     document = Document(
@@ -95,69 +124,119 @@ async def upload_document(
     await db.commit()
     await db.refresh(document)
     
-    # Chunk Text using ingestion service
-    ids, documents_content, enriched_chunk_texts, metadatas, sparse_values = await ingestion_service.process_text(
-        text=text,
-        document_id=document.id,
-        title=document.title,
-        doc_type="file",
-        metadata={"user_id": current_user.id}
-    )
-    
-    # Store Chunks in DB
-    for i, (embedding_id, chunk_content) in enumerate(zip(ids, documents_content)):
-        # Extract enrichment from metadata
-        meta = metadatas[i]
-        
-        # Parse JSON strings coming from ingestion service
-        qas = []
-        if meta.get("generated_qas"):
-            try:
-                qas = json.loads(meta.get("generated_qas"))
-            except:
-                pass
-                
-        entities = []
-        if meta.get("entities"):
-            try:
-                entities = json.loads(meta.get("entities"))
-            except:
-                pass
-
-        chunk = Chunk(
-            document_id=document.id,
-            chunk_index=i,
-            text=chunk_content,
-            embedding_id=embedding_id,
-            # Map enriched fields
-            summary=meta.get("summary"),
-            generated_qas=qas,
-            entities=entities,
-            metadata_json=meta 
-        )
-        db.add(chunk)
-        
-    await db.commit()
-    
-    # Trigger background auto-tagging
-    background_tasks.add_task(run_metadata_extraction, document.id, current_user.id, "document")
-
-    # Add to Vector Store
+    # Offload Ingestion to Background Task
     try:
-        await vector_store.add_documents(
-            ids=ids, 
-            documents=enriched_chunk_texts, 
-            metadatas=metadatas,
-            sparse_values=sparse_values
+        from app.worker import ingest_memory_task
+        print(f"Triggering background ingestion for document {document.id}")
+        ingest_memory_task.delay(
+            memory_id=document.id,
+            user_id=current_user.id,
+            content=text,
+            title=document.title,
+            tags=[],
+            source=document.source, # filename
+            doc_type="file"
         )
     except Exception as e:
-        print(f"Vector Store Error: {e}")
-        # Non-blocking for now
+        print(f"Failed to trigger background task: {e}")
+        # Fallback to foreground if celery fails is optional, but for now we log.
         
-    # Cleanup
-    os.remove(file_path)
+    return {"status": "success", "document_id": document.id, "message": "Document queued for processing"}
+
+from app.services.youtube_service import youtube_service
+
+class YouTubeUpload(BaseModel):
+    url: str
+    tags: List[str] = []
+
+@router.post("/upload-youtube", response_model=Any)
+async def upload_youtube(
+    request: YouTubeUpload,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user)
+) -> Any:
+    """
+    Ingest a YouTube video transcript.
+    """
+    # Try to extract transcript
+    try:
+        transcript = youtube_service.extract_transcript(request.url)
+    except Exception as e:
+        print(f"Warning: Transcript extraction threw error: {e}")
+        transcript = None
+        
+    # Fetch real title and description
+    video_id = youtube_service.get_video_id(request.url)
+    title = youtube_service.get_video_title(request.url)
+    description = youtube_service.get_video_description(request.url)
     
-    return {"status": "success", "document_id": document.id, "chunks": len(ids)}
+    final_content = ""
+    # Merge Default Tags with Request Tags
+    tags = ["youtube"]
+    if request.tags:
+        tags.extend(request.tags)
+        # Dedupe
+        tags = list(set(tags))
+    
+    if transcript and transcript.strip():
+        # Happy path
+        final_content = transcript
+    else:
+        # Fallback path
+        print(f"Fallback: Using description for {video_id}")
+        final_content = f"[Transcript Unavailable - Metadata Only]\n\nDescription:\n{description}"
+        tags.append("no-transcript")
+        
+    # Create Memory Record (showing in Inbox)
+    from app.models.memory import Memory
+    
+    # Logic: Only show in inbox if from extension OR if auto-approve is off (pending)
+    # Default Assume Approved/Direct for App, unless implicit setting.
+    # User Request: "Only anything coming from extension should end in the inbox"
+    # So if "extension" in tags -> show_in_inbox = True.
+    # Else -> show_in_inbox = False (direct save).
+    
+    show_in_inbox = False
+    if "extension" in tags:
+        show_in_inbox = True
+    
+    memory = Memory(
+        title=title,
+        content=final_content,
+        source_llm="youtube", 
+        user_id=current_user.id,
+        tags=tags,
+        embedding_id=str(uuid.uuid4()),
+        status="pending" if show_in_inbox else "approved", # If skipping inbox, it's approved
+        show_in_inbox=show_in_inbox
+    )
+    db.add(memory)
+    await db.commit()
+    await db.refresh(memory)
+    
+    # Offload Ingestion to Background Task
+    try:
+        from app.worker import ingest_memory_task, process_memory_metadata_task
+        print(f"Triggering background ingestion for YouTube Memory {memory.id}")
+        
+        # Metadata analysis
+        process_memory_metadata_task.delay(memory.id, current_user.id)
+        
+        # Ingest content
+        ingest_memory_task.delay(
+            memory_id=memory.id,
+            user_id=current_user.id,
+            content=final_content,
+            title=memory.title,
+            tags=tags,
+            source=request.url,
+            doc_type="memory" # Important: treat as memory now
+        )
+    except Exception as e:
+        print(f"Failed to trigger background task: {e}")
+
+    return {"status": "success", "document_id": memory.id, "message": "Video queued."}
 
 @router.get("/", response_model=Any)
 async def get_documents(
@@ -249,6 +328,10 @@ async def create_memory(
     # User upload: If approved, skip inbox. If pending, show in inbox.
     show_in_inbox = True if initial_status == "pending" else False
     
+    # Rule: Anything external (identified by 'extension' tag) goes to inbox
+    if memory_in.tags and "extension" in memory_in.tags:
+        show_in_inbox = True
+    
     embedding_id = str(uuid.uuid4())
     
     memory = Memory(
@@ -270,61 +353,21 @@ async def create_memory(
     
     # Ingest only if approved
     if initial_status == "approved":
-        try:
-            ids, documents_content, enriched_chunk_texts, metadatas, sparse_values = await ingestion_service.process_text(
-                text=memory_in.content,
-                document_id=memory.id,
-                title=memory_in.title,
-                doc_type="memory",
-                metadata={"user_id": current_user.id, "memory_id": memory.id, "tags": str(memory_in.tags) if memory_in.tags else ""}
-            )
-            
-            if ids:
-                memory.embedding_id = ids[0]
-                db.add(memory)
-                
-                # Save Chunks
-                for i, (embedding_id, chunk_content) in enumerate(zip(ids, documents_content)):
-                    meta = metadatas[i]
-                    
-                    # Parse JSON fields safely
-                    qas = []
-                    if meta.get("generated_qas"):
-                         try:
-                             qas = json.loads(meta.get("generated_qas"))
-                         except:
-                             pass
-                    
-                    entities = []
-                    if meta.get("entities"):
-                         try:
-                             entities = json.loads(meta.get("entities"))
-                         except:
-                             pass
+        ingest_memory_task.delay(
+            memory_id=memory.id,
+            user_id=current_user.id,
+            content=memory_in.content,
+            title=memory.title,
+            tags=memory_in.tags,
+            source="user-upload",
+            doc_type="memory",
+            mode="append"
+        )
 
-                    chunk = Chunk(
-                        memory_id=memory.id, # Link to Memory
-                        chunk_index=i,
-                        text=chunk_content,
-                        embedding_id=embedding_id,
-                        summary=meta.get("summary"),
-                        generated_qas=qas,
-                        entities=entities,
-                        metadata_json=meta
-                    )
-                    db.add(chunk)
+    # Trigger Dedupe Job (Background Celery)
+    dedupe_memory_task.delay(memory.id)
 
-                await db.commit()
-                
-                await vector_store.add_documents(
-                    ids=ids, 
-                    documents=enriched_chunk_texts, 
-                    metadatas=metadatas,
-                    sparse_values=sparse_values
-                )
-        except Exception as e:
-            print(f"Vector Store Error: {e}")
-            
+    
     return {"status": "success", "document_id": memory.id, "chunks": 1 if initial_status == "approved" else 0}
 
 @router.put("/{doc_id}", response_model=Any)
@@ -353,74 +396,22 @@ async def update_document(
     document.content = memory.content
     document.tags = memory.tags
     
-    # Delete old chunks from vector store
-    # chunks are already loaded due to selectinload
-    old_chunk_ids = [chunk.embedding_id for chunk in document.chunks if chunk.embedding_id]
-    if old_chunk_ids:
-        try:
-            await vector_store.delete(ids=old_chunk_ids)
-        except Exception as e:
-            print(f"Error deleting old chunks: {e}")
-    
-    # Delete old chunks from DB
-    for chunk in document.chunks:
-        await db.delete(chunk)
     await db.commit()
     
-    # Re-chunk the updated content using ingestion service
-    ids, documents_content, enriched_chunk_texts, metadatas, sparse_values = await ingestion_service.process_text(
-        text=memory.content,
-        document_id=document.id,
+    # Offload re-ingestion to background task
+    from app.worker import ingest_memory_task
+    ingest_memory_task.delay(
+        memory_id=document.id,
+        user_id=current_user.id,
+        content=memory.content,
         title=document.title,
-        doc_type=document.doc_type,
-        metadata={"user_id": current_user.id, "tags": str(document.tags) if document.tags else ""}
+        tags=document.tags,
+        source=document.source, # Keep original source or update?
+        doc_type=document.doc_type, # file, memory, youtube
+        mode="replace"
     )
     
-    # Store new chunks in DB
-    for i, (embedding_id, chunk_content) in enumerate(zip(ids, documents_content)):
-        # Parse logic if needed for complex metadata, but for update we trust ingestion returns plain dicts unless we parse them
-        # Logic similar to create_memory...
-        meta = metadatas[i]
-        qas = []
-        if meta.get("generated_qas"):
-             try:
-                 qas = json.loads(meta.get("generated_qas"))
-             except:
-                 pass
-        
-        entities = []
-        if meta.get("entities"):
-             try:
-                 entities = json.loads(meta.get("entities"))
-             except:
-                 pass
-
-        chunk = Chunk(
-            document_id=document.id,
-            chunk_index=i,
-            text=chunk_content,
-            embedding_id=embedding_id,
-            summary=meta.get("summary"),
-            generated_qas=qas,
-            entities=entities,
-            metadata_json=meta
-        )
-        db.add(chunk)
-    
-    await db.commit()
-    
-    # Add to Vector Store
-    try:
-        await vector_store.add_documents(
-            ids=ids, 
-            documents=enriched_chunk_texts, 
-            metadatas=metadatas,
-            sparse_values=sparse_values
-        )
-    except Exception as e:
-        print(f"Vector Store Error: {e}")
-    
-    return {"status": "success", "document_id": document.id, "chunks": len(ids)}
+    return {"status": "success", "document_id": document.id, "message": "Document updated and queued for re-processing"}
 
 
 class SearchRequest(BaseModel):
@@ -480,21 +471,29 @@ async def get_document_chunks(
     """
     Get chunks for a specific memory/document (for Enrichment Sidebar).
     """
-    # Parse ID
+    # Parse ID and Build Query
     try:
-        if "mem_" in doc_id:
+        query = select(Chunk)
+        
+        if doc_id.startswith("mem_"):
             numeric_id = int(doc_id.split("_")[-1])
-        elif "doc_" in doc_id:
+            query = query.where(Chunk.memory_id == numeric_id)
+        elif doc_id.startswith("doc_"):
             numeric_id = int(doc_id.split("_")[-1])
+            query = query.where(Chunk.document_id == numeric_id)
         else:
+            # Fallback for legacy IDs (assume likely memory, or try both safest usage)
+            # To be safe against collisions, maybe we should default to memory if unknown?
+            # But legacy might be mixed. Sticking to OR for legacy integers only.
             numeric_id = int(doc_id)
+            query = query.where(
+                (Chunk.document_id == numeric_id) | (Chunk.memory_id == numeric_id)
+            )
+            
+        query = query.order_by(Chunk.chunk_index)
+            
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid Document ID format")
-
-    # Try finding chunks by document_id OR memory_id (since we have dual schema now)
-    query = select(Chunk).where(
-        (Chunk.document_id == numeric_id) | (Chunk.memory_id == numeric_id)
-    ).order_by(Chunk.chunk_index)
     
     result = await db.execute(query)
     chunks = result.scalars().all()

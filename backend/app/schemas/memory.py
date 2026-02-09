@@ -20,6 +20,7 @@ class MemoryInDBBase(MemoryBase):
     user_id: int
     created_at: datetime
     updated_at: Optional[datetime] = None
+    doc_type: str = "memory"
     type: str = "memory"
     status: str = "approved"
     task_type: Optional[str] = None

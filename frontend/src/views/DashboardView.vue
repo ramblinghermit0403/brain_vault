@@ -4,14 +4,14 @@
 
     <main class="flex-1 overflow-y-auto w-full pt-8 pb-12 no-scrollbar">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col min-h-full">
-          <div class="mb-8">
+          <div class="mb-8" id="tour-welcome">
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Good {{ timeOfDay }}, {{ user?.name || 'User' }}</h1>
             <p class="mt-1 text-gray-500 dark:text-text-secondary">Welcome back to your MemWyre. Here's a quick overview.</p>
           </div>
 
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1">
               <!-- Left Column: Unified Document List (span 2 cols) -->
-              <div class="lg:col-span-2 flex flex-col">
+              <div class="lg:col-span-2 flex flex-col" id="tour-knowledge-base">
                   <div class="bg-white dark:bg-surface rounded-xl shadow-sm border border-gray-100 dark:border-border overflow-hidden flex-1 flex flex-col h-[600px]">
                       <UnifiedDocumentList class="flex-1" />
                   </div>
@@ -20,8 +20,8 @@
 
                <!-- Right Column: Agent Facts -->
                <div class="flex flex-col h-full overflow-hidden">
-                   <div class="bg-white dark:bg-surface rounded-xl shadow-sm border border-gray-100 dark:border-border p-6 flex-1 flex flex-col h-[600px]">
-                       <AgentFactsList />
+                   <div class="bg-white dark:bg-surface rounded-xl shadow-sm border border-gray-100 dark:border-border overflow-hidden flex-1 flex flex-col h-[600px]">
+                       <DashboardInboxList />
                    </div>
                </div>
           </div>
@@ -37,7 +37,7 @@ import { onMounted, computed, ref } from 'vue';
 import NavBar from '../components/NavBar.vue';
 import UnifiedDocumentList from '../components/UnifiedDocumentList.vue';
 import QuickActions from '../components/QuickActions.vue';
-import AgentFactsList from '../components/AgentFactsList.vue';
+import DashboardInboxList from '../components/DashboardInboxList.vue';
 import DailyReviewModal from '../components/DailyReviewModal.vue';
 import { createTour } from '../tour';
 import { useInboxStore } from '../stores/inbox';

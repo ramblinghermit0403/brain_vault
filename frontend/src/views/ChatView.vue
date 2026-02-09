@@ -154,8 +154,8 @@ import LoadingLogo from '@/components/common/LoadingLogo.vue';
       <!-- MAIN CHAT AREA -->
       <main class="flex-1 flex flex-col min-w-0 bg-white dark:bg-app relative">
         <!-- Background Pattern for Landing State -->
-        <div v-if="chatStore.messages.length === 0" class="absolute inset-0 z-0 pointer-events-none opacity-40" 
-             style="background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 40px 40px;">
+        <div v-if="chatStore.messages.length === 0" class="absolute inset-0 z-0 pointer-events-none opacity-60 dark:opacity-30" 
+             style="background-image: radial-gradient(#9ca3af 1px, transparent 1px); background-size: 40px 40px;">
         </div>
 
         <!-- Toggle Buttons -->

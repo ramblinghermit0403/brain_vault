@@ -55,11 +55,19 @@ with redirect_stdout_to_stderr():
     # Import ChatSession to ensure relationship mapper works
     from app.models.chat import ChatSession
     from app.services.context_builder import context_builder
-    # Import Worker Tasks
-    from app.worker import process_memory_metadata_task, dedupe_memory_task
+    from app.services.memory_service import memory_service
+    # Worker tasks imported lazily to avoid Celery/Redis connection at startup
+
+# Setup File Logging for Debugging (since stdout is redirected)
+import logging
+file_handler = logging.FileHandler("mcp_debug.log")
+file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+logger = logging.getLogger("mcp_server")
+logger.addHandler(file_handler)
+logger.setLevel(logging.INFO)
 
 # Initialize FastMCP Server
-mcp = FastMCP("Brain Vault")
+mcp = FastMCP("MemWyre")
 
 # Import Context and ApiKey
 from mcp.server.fastmcp import Context
@@ -154,7 +162,7 @@ async def get_current_user(db, ctx: Context = None):
 @mcp.tool()
 async def save_memory(text: str, ctx: Context, source: str = "mcp", tags: Optional[List[str]] = None) -> str:
     """
-    Save a new memory snippet to the Brain Vault.
+    Save a new memory snippet to the MemWyre Vault. Use this tool when the user explicitly asks you to 'remember' something, 'save' a note, or when you encounter important information that should be persisted for future reference.
     Args:
         text: The content of the memory.
         source: Source of memory (default 'mcp').
@@ -162,88 +170,33 @@ async def save_memory(text: str, ctx: Context, source: str = "mcp", tags: Option
     """
     async with AsyncSessionLocal() as db:
         try:
+            logger.info(f"MCP save_memory called. Source: {source}. Text length: {len(text)}")
             user = await get_current_user(db, ctx)
             if not user:
+                logger.error("No user found during save_memory")
                 return "Error: No user found."
 
-            # Check Auto-Approve Setting
-            auto_approve = True
-            # Load settings if needed, but it's a JSON column so it's loaded with user
-            user_settings = user.settings
-            
-            if user_settings:
-                # Handle JSON stored as string in SQLite if necessary
-                if isinstance(user_settings, str):
-                    import json
-                    try:
-                        user_settings = json.loads(user_settings)
-                    except:
-                        user_settings = {}
-                        
-                if isinstance(user_settings, dict):
-                    auto_approve = user_settings.get("auto_approve", True)
-                    
-            initial_status = "approved" if auto_approve else "pending"
-            show_in_inbox = True
-            
-            import uuid
-            embedding_id = str(uuid.uuid4())
-
-            memory = Memory(
-                user_id=user.id,
+            memory = await memory_service.create_memory(
+                db=db,
+                user=user,
                 content=text,
-                title=f"Memory from {source}",
-                source_llm=source,
-                status=initial_status,
-                tags=tags,
-                embedding_id=embedding_id,
-                show_in_inbox=show_in_inbox
+                source=source,
+                tags=tags
             )
-            db.add(memory)
-            await db.commit()
-            await db.refresh(memory)
             
-            # Ingest if approved
-            if initial_status == "approved":
-                try:
-                    # Ingestion service is async
-                    ids, documents_content, metadatas = await ingestion_service.process_text(
-                        text=text,
-                        document_id=memory.id,
-                        title=memory.title,
-                        doc_type="memory",
-                        metadata={"user_id": user.id, "memory_id": memory.id, "tags": str(tags) if tags else "", "source": source}
-                    )
-                    
-                    if ids:
-                        memory.embedding_id = ids[0]
-                        await db.commit()
-                        
-                        # Vector store is synchronous, so we just call it
-                        vector_store.add_documents(ids=ids, documents=documents_content, metadatas=metadatas)
-                        
-                    # Trigger Background Tasks (Auto-Tagging & Dedupe)
-                    # We use .delay() to invoke Celery tasks asynchronously
-                    try:
-                        process_memory_metadata_task.delay(memory.id, user.id)
-                        dedupe_memory_task.delay(memory.id)
-                    except Exception as e:
-                        # Log error but don't fail the request (printing to stderr per config)
-                        print(f"Error triggering background tasks: {e}", file=sys.stderr)
-                        
-                except Exception as e:
-                    return f"Memory saved but ingestion failed: {str(e)}"
-            
-            return f"Memory saved to Inbox with ID: mem_{memory.id} (Status: {initial_status})"
+            logger.info(f"Memory saved successfully: mem_{memory.id}")
+            return f"Memory saved to Inbox with ID: mem_{memory.id} (Status: {memory.status})"
         except Exception as e:
+            logger.error(f"Error saving memory: {e}", exc_info=True)
             return f"Error saving memory: {str(e)}"
 
 @mcp.tool()
 async def search_brain_vault(query: str, ctx: Context, purpose: str = "general") -> str:
     """
-    The PRIMARY tool for searching your memory. Use this to retrieve relevant context, notes, or code snippets from the Brain Vault.
+    The PRIMARY tool for searching the user's "Second Brain". Use this to retrieve relevant context, notes, code snippets, or past conversations from the MemWyre Vault.
+    ALWAYS use this before answering questions that might require personal context.
     Args:
-        query: The semantic search query (e.g., "python fastapi project structure" or "notes on meeting with Bob").
+        query: The semantic search query (e.g., "python fastapi project structure", "notes on meeting with Bob", or "auth system specs").
         purpose: Optional hint for context formatting ("general", "code", "summary").
     """
     async with AsyncSessionLocal() as db:
@@ -413,7 +366,7 @@ async def update_memory(memory_id: str, content: str, ctx: Context) -> str:
                     pass
             
             # Re-ingest
-            ids, documents_content, metadatas = await ingestion_service.process_text(
+            ids, raw_chunks, enriched_chunks, metadatas = await ingestion_service.process_text(
                 text=memory.content,
                 document_id=memory.id,
                 title=memory.title,
@@ -427,7 +380,7 @@ async def update_memory(memory_id: str, content: str, ctx: Context) -> str:
                 
                 vector_store.add_documents(
                     ids=ids,
-                    documents=documents_content,
+                    documents=enriched_chunks,
                     metadatas=metadatas
                 )
 

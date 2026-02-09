@@ -7,13 +7,13 @@
             <div class="flex items-center gap-2 select-none" id="nav-logo">
                 <!-- Logo -->
                 <img src="/image.svg" alt="MemWyre" class="w-8 h-8 rounded-lg" />
-                <h1 class="text-xl font-bold text-black dark:text-white">MemWyre</h1>
+                <h1 class="text-xl font-medium text-black dark:text-white font-zalando">MemWyre</h1>
             </div>
           </router-link>
         </div>
 
         <div class="flex items-center gap-4">
-          <button @click="isQuickCreateOpen = true" class="flex items-center gap-2 bg-black text-white dark:bg-white dark:text-black hover:opacity-80 px-4 py-2 rounded-full text-sm font-bold transition-all shadow-sm">
+          <button id="tour-quick-actions" @click="isQuickCreateOpen = true" class="flex items-center gap-2 bg-black text-white dark:bg-white dark:text-black hover:opacity-80 px-4 py-2 rounded-full text-sm font-bold transition-all shadow-sm">
              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
              Quick Add
           </button>
@@ -22,18 +22,18 @@
              Dashboard
           </router-link>
 
-          <router-link to="/inbox" active-class="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white" class="relative flex items-center gap-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+          <router-link id="tour-inbox" to="/inbox" active-class="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white" class="relative flex items-center gap-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
             Inbox
             <span v-if="inboxCount > 0" class="absolute top-1.5 right-1.5 flex h-2 w-2 items-center justify-center rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800"></span>
           </router-link>
 
-          <router-link to="/chat" active-class="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white" class="flex items-center gap-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+          <router-link id="tour-retrieval" to="/chat" active-class="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white" class="flex items-center gap-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
              Chat
           </router-link>
 
-             <router-link to="/map" active-class="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white" class="flex items-center gap-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+             <router-link id="tour-memory-map" to="/map" active-class="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white" class="flex items-center gap-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
              Memory Map
           </router-link>

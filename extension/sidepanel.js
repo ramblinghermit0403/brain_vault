@@ -4,20 +4,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const mainApp = document.getElementById('main-app');
 
     // Login Elements
-
     const saveTokenBtn = document.getElementById('save-token');
     const logoutBtn = document.getElementById('logout-btn');
+
+    // Settings Elements
+    const settingsBtn = document.getElementById('settings-btn');
+    const backSettingsBtn = document.getElementById('back-from-settings');
+    const viewSettings = document.getElementById('view-settings');
+    const tabsContainer = document.getElementById('tabs-container');
 
     // Tabs
     const tabs = document.querySelectorAll('.tab-segment');
     const views = document.querySelectorAll('.view');
-
-    // Generate Elements
-    const genQuery = document.getElementById('gen-query');
-    const genBtn = document.getElementById('gen-btn');
-    const genResult = document.getElementById('gen-result');
-    const genCopy = document.getElementById('gen-copy');
-    const modelParamsInput = document.getElementById('model-params'); // NEW
 
     // Save Elements
     const saveTitle = document.getElementById('save-title');
@@ -29,6 +27,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const searchQuery = document.getElementById('search-query');
     const searchBtn = document.getElementById('search-btn');
     const searchResults = document.getElementById('search-results');
+    const searchK = document.getElementById('search-k');
+
+    // Memories Elements
+    const refreshBtn = document.getElementById('refresh-memories');
 
     // Check Auth
     const { token } = await chrome.storage.local.get('token');
@@ -55,10 +57,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         chrome.tabs.create({ url: 'http://localhost:5173/login?source=extension' });
     });
 
-    logoutBtn.addEventListener('click', async () => {
-        await chrome.storage.local.remove('token');
-        showLogin();
-    });
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            await chrome.storage.local.remove('token');
+            showLogin();
+        });
+    }
+
+    // --- Settings Navigation ---
+
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => {
+            // Hide all views and tabs
+            views.forEach(v => v.classList.remove('active'));
+            tabsContainer.classList.add('hidden');
+
+            // Show settings
+            viewSettings.classList.add('active');
+        });
+    }
+
+    if (backSettingsBtn) {
+        backSettingsBtn.addEventListener('click', () => {
+            // Hide settings
+            viewSettings.classList.remove('active');
+            tabsContainer.classList.remove('hidden');
+
+            // Restore active tab (default to memories if none)
+            const activeTab = document.querySelector('.tab-segment.active');
+            if (activeTab) {
+                const targetId = activeTab.getAttribute('data-tab');
+                document.getElementById(`view-${targetId}`).classList.add('active');
+            } else {
+                document.getElementById('view-memories').classList.add('active');
+            }
+        });
+    }
 
     function showLogin() {
         loginView.classList.remove('hidden');
@@ -68,6 +102,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     function showMain() {
         loginView.classList.add('hidden');
         mainApp.classList.remove('hidden');
+
+        // Ensure settings are closed and tabs are visible
+        if (viewSettings) viewSettings.classList.remove('active');
+        if (tabsContainer) tabsContainer.classList.remove('hidden');
+
+        // Restore active view based on active tab
+        const activeTab = document.querySelector('.tab-segment.active');
+        if (activeTab) {
+            const targetId = activeTab.getAttribute('data-tab');
+            const targetView = document.getElementById(`view-${targetId}`);
+            if (targetView) targetView.classList.add('active');
+
+            // If memories is the active tab, load content
+            if (targetId === 'memories') {
+                setTimeout(() => loadMemoriesAndDocuments(), 100);
+            }
+        } else {
+            // Default fallback if no tab is active
+            const memTab = document.querySelector('[data-tab="memories"]');
+            if (memTab) memTab.classList.add('active');
+
+            const memView = document.getElementById('view-memories');
+            if (memView) memView.classList.add('active');
+
+            setTimeout(() => loadMemoriesAndDocuments(), 100);
+        }
     }
 
     // --- Tab Handlers ---
@@ -82,46 +142,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             tab.classList.add('active');
             const viewId = `view-${tab.dataset.tab}`;
             document.getElementById(viewId).classList.add('active');
+
+            // Load data for Memories tab
+            if (tab.dataset.tab === 'memories') {
+                loadMemoriesAndDocuments();
+            }
         });
     });
 
     // --- Feature Handlers ---
 
-    // 1. Generate Prompt
-    // 1. Generate Prompt
-    genBtn.addEventListener('click', async () => {
-        const query = genQuery.value.trim();
-        const modelParams = modelParamsInput ? modelParamsInput.value.trim() : '';
-
-        if (!query) return;
-
-        setLoading(genBtn, true, 'Generating...');
-        genResult.classList.add('hidden');
-        genCopy.classList.add('hidden');
-
-        try {
-            // Send modelParams along with query
-            const response = await sendMessage('generatePrompt', { query, model_params: modelParams });
-            if (response.success) {
-                genResult.textContent = response.data.prompt;
-                genResult.classList.remove('hidden');
-                genCopy.classList.remove('hidden');
-            } else {
-                showToast(response.error, 'error');
-            }
-        } catch (err) {
-            showToast(err.message, 'error');
-        } finally {
-            setLoading(genBtn, false, 'Generate Prompt');
-        }
-    });
-
-    genCopy.addEventListener('click', () => {
-        navigator.clipboard.writeText(genResult.textContent);
-        showToast('Prompt copied to clipboard!');
-    });
-
-    // 2. Save Memory
+    // 1. Save Memory
     saveBtn.addEventListener('click', async () => {
         const content = saveContent.value.trim();
         const title = saveTitle.value.trim() || 'Extension Clip';
@@ -143,100 +174,193 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
-            setLoading(saveBtn, false, 'Save to Memory');
+            setLoading(saveBtn, false, 'Save Memory');
         }
     });
 
-    // 3. Search Memory
+    // 2. Search Memory with custom k value and filter
+    const searchIcon = document.getElementById('search-icon');
+    const loadingIcon = document.getElementById('loading-icon');
+    const searchFilter = document.getElementById('search-filter');
+
     searchBtn.addEventListener('click', async () => {
         const query = searchQuery.value.trim();
         if (!query) return;
 
-        setLoading(searchBtn, true, 'Searching...');
+        const topK = parseInt(searchK.value) || 5;
+        const filter = searchFilter.value;
+
+        // Show loading state
+        searchBtn.disabled = true;
+        searchIcon.classList.add('hidden');
+        loadingIcon.classList.remove('hidden');
         searchResults.classList.add('hidden');
         searchResults.innerHTML = '';
 
         try {
-            const response = await sendMessage('searchMemory', { query });
+            const response = await sendMessage('searchMemory', { query, top_k: topK });
             if (response.success) {
-                renderResults(response.data);
+                renderResults(response.data, filter);
             } else {
                 showToast(response.error, 'error');
             }
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
-            setLoading(searchBtn, false, 'Search');
+            // Reset loading state
+            searchBtn.disabled = false;
+            searchIcon.classList.remove('hidden');
+            loadingIcon.classList.add('hidden');
         }
     });
 
-    // Fetch latest memories and files when Retrieve tab is clicked
-    document.querySelector('.tab-segment[data-tab="search"]').addEventListener('click', async () => {
-        searchResults.innerHTML = '<div class="status-msg">Loading latest items...</div>';
-        searchResults.classList.remove('hidden');
+    // Allow Enter key to search
+    searchQuery.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            searchBtn.click();
+        }
+    });
+
+    // 3. Load Memories and Documents with filter
+    const memoriesContainer = document.getElementById('memories-container');
+    const memoriesFilter = document.getElementById('memories-filter');
+    let allMemoriesData = { memories: [], documents: [] }; // Cache data
+
+    async function loadMemoriesAndDocuments() {
+        memoriesContainer.innerHTML = '<div class="status-msg">Loading...</div>';
 
         try {
             const response = await sendMessage('getDocuments', {});
             if (response.success) {
                 // Process Memories
-                const memories = response.data
+                allMemoriesData.memories = response.data
                     .filter(d => d.doc_type === 'memory')
                     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                    .slice(0, 5)
+                    .slice(0, 15)
                     .map(d => ({
                         content: d.content,
-                        metadata: { type: 'Memory', created_at: d.created_at, title: d.title }
+                        metadata: { type: 'memory', created_at: d.created_at, title: d.title }
                     }));
 
-                // Process Files
-                const files = response.data
-                    .filter(d => d.doc_type === 'file')
+                // Process Documents/Files
+                allMemoriesData.documents = response.data
+                    .filter(d => d.doc_type === 'file' || d.doc_type === 'document')
                     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                    .slice(0, 5)
+                    .slice(0, 15)
                     .map(d => ({
-                        content: d.content,
-                        metadata: { type: 'File', created_at: d.created_at, title: d.title }
+                        content: d.content || d.title || 'No content',
+                        metadata: { type: 'document', created_at: d.created_at, title: d.title }
                     }));
 
-                searchResults.innerHTML = '';
-
-                if (memories.length > 0) {
-                    const memHeader = document.createElement('div');
-                    memHeader.className = 'result-meta';
-                    memHeader.style.marginTop = '12px';
-                    memHeader.textContent = 'RECENT MEMORIES';
-                    searchResults.appendChild(memHeader);
-                    renderResultItems(memories, searchResults);
-                }
-
-                if (files.length > 0) {
-                    const fileHeader = document.createElement('div');
-                    fileHeader.className = 'result-meta';
-                    fileHeader.style.marginTop = '16px';
-                    fileHeader.textContent = 'RECENT FILES';
-                    searchResults.appendChild(fileHeader);
-                    renderResultItems(files, searchResults);
-                }
-
-                if (memories.length === 0 && files.length === 0) {
-                    searchResults.innerHTML = '<div class="status-msg">No items found.</div>';
-                }
+                // Render based on filter
+                renderMemoriesWithFilter();
             } else {
                 showToast(response.error, 'error');
             }
         } catch (err) {
             showToast(err.message, 'error');
+            memoriesContainer.innerHTML = '<div class="status-msg">Error loading data.</div>';
         }
-    });
+    }
 
-    function renderResults(items) {
+    function renderMemoriesWithFilter() {
+        const filter = memoriesFilter.value;
+        memoriesContainer.innerHTML = '';
+
+        let itemsToRender = [];
+
+        if (filter === 'all') {
+            // Show memories section
+            if (allMemoriesData.memories.length > 0) {
+                const memHeader = document.createElement('div');
+                memHeader.className = 'section-header';
+                memHeader.innerHTML = '<span class="section-title">Memories</span>';
+                memoriesContainer.appendChild(memHeader);
+                renderResultItems(allMemoriesData.memories, memoriesContainer);
+            }
+            // Show documents section
+            if (allMemoriesData.documents.length > 0) {
+                const docHeader = document.createElement('div');
+                docHeader.className = 'section-header';
+                docHeader.style.marginTop = '16px';
+                docHeader.innerHTML = '<span class="section-title">Documents</span>';
+                memoriesContainer.appendChild(docHeader);
+                renderResultItems(allMemoriesData.documents, memoriesContainer);
+            }
+            if (allMemoriesData.memories.length === 0 && allMemoriesData.documents.length === 0) {
+                memoriesContainer.innerHTML = '<div class="status-msg">No items yet.</div>';
+            }
+        } else if (filter === 'memories') {
+            if (allMemoriesData.memories.length > 0) {
+                renderResultItems(allMemoriesData.memories, memoriesContainer);
+            } else {
+                memoriesContainer.innerHTML = '<div class="status-msg">No memories yet.</div>';
+            }
+        } else if (filter === 'documents') {
+            if (allMemoriesData.documents.length > 0) {
+                renderResultItems(allMemoriesData.documents, memoriesContainer);
+            } else {
+                memoriesContainer.innerHTML = '<div class="status-msg">No documents yet.</div>';
+            }
+        }
+    }
+
+    // Filter change handler
+    if (memoriesFilter) {
+        memoriesFilter.addEventListener('change', renderMemoriesWithFilter);
+    }
+
+    // Refresh button
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', loadMemoriesAndDocuments);
+    }
+
+    function renderResults(items, filter = 'all') {
         searchResults.innerHTML = '';
+
         if (items.length === 0) {
             searchResults.textContent = 'No results found.';
             searchResults.classList.remove('hidden');
             return;
         }
-        renderResultItems(items, searchResults);
+
+        // Separate facts and chunks/memories
+        let facts = items.filter(item => item.metadata?.type === 'fact');
+        let chunks = items.filter(item => item.metadata?.type !== 'fact');
+
+        // Apply filter
+        if (filter === 'facts') {
+            chunks = [];
+        } else if (filter === 'memories') {
+            facts = [];
+        }
+
+        // Check if anything to show
+        if (facts.length === 0 && chunks.length === 0) {
+            searchResults.textContent = 'No results found.';
+            searchResults.classList.remove('hidden');
+            return;
+        }
+
+        // Render Chunks/Memories section
+        if (chunks.length > 0) {
+            const chunksHeader = document.createElement('div');
+            chunksHeader.className = 'section-header';
+            chunksHeader.innerHTML = '<span class="section-title">Memories</span>';
+            searchResults.appendChild(chunksHeader);
+            renderResultItems(chunks, searchResults);
+        }
+
+        // Render Facts section
+        if (facts.length > 0) {
+            const factsHeader = document.createElement('div');
+            factsHeader.className = 'section-header';
+            factsHeader.style.marginTop = '16px';
+            factsHeader.innerHTML = '<span class="section-title">Facts</span>';
+            searchResults.appendChild(factsHeader);
+            renderResultItems(facts, searchResults);
+        }
+
         searchResults.classList.remove('hidden');
     }
 
@@ -245,11 +369,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             const div = document.createElement('div');
             div.className = 'result-item';
 
+            // Handle both 'text' (from search results) and 'content' (from documents)
+            const itemContent = item.content || item.text || '';
+
             // Truncate content for display
             const MAX_LENGTH = 150;
-            const displayContent = item.content.length > MAX_LENGTH
-                ? item.content.substring(0, MAX_LENGTH) + '...'
-                : item.content;
+            const displayContent = itemContent.length > MAX_LENGTH
+                ? itemContent.substring(0, MAX_LENGTH) + '...'
+                : itemContent;
 
             // Handle different metadata structures (flat vs nested)
             let title = "Unknown";
@@ -257,8 +384,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             let score = "";
 
             if (item.metadata) {
-                // If it's a search result from vector store, metadata is flat
-                // If it's from getDocuments, we manually constructed metadata object
                 title = item.metadata.title || item.metadata.source || "Untitled";
                 if (item.metadata.created_at) {
                     dateStr = new Date(item.metadata.created_at).toLocaleDateString();
@@ -273,16 +398,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <span class="result-title">${title}</span>
                     <span class="result-meta">${score || dateStr}</span>
                 </div>
-                <div class="result-content" style="margin-bottom:12px;">${displayContent}</div>
+                <div class="result-content" style="margin-bottom:8px;">${displayContent}</div>
                 <button class="secondary-btn copy-btn" style="width:100%; margin-top:0;">Copy to Clipboard</button>
             `;
 
-            // Add copy functionality
+            // Add copy functionality with visual feedback
             const copyBtn = div.querySelector('.copy-btn');
             copyBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                navigator.clipboard.writeText(item.content);
-                showToast('Copied to clipboard!');
+                navigator.clipboard.writeText(itemContent);
+
+                // Visual feedback - green button with "Copied" text
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = 'Copied!';
+                copyBtn.classList.add('copied');
+
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.classList.remove('copied');
+                }, 2000);
             });
 
             container.appendChild(div);
@@ -304,15 +438,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         btn.textContent = text;
     }
 
-    // New Toast Function
+    // Toast Function
     function showToast(message, type = 'info') {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
 
         // Icon based on type
-        const icon = type === 'error' ? '❌' : 'ℹ️';
-        if (type === 'success') icon = '✅'; // Optional if used explicitly
+        let icon = type === 'error' ? '❌' : 'ℹ️';
+        if (type === 'success') icon = '✅';
 
         toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
 
@@ -325,12 +459,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (container.contains(toast)) {
                     container.removeChild(toast);
                 }
-            }, 300); // Wait for fade out
+            }, 300);
         }, 3000);
-    }
-
-    // Deprecated but kept for compatibility logic updates above -> redirected to showToast
-    function showError(el, msg) {
-        showToast(msg, 'error');
     }
 });

@@ -14,7 +14,7 @@ export const createTour = () => {
             {
                 element: '#tour-welcome',
                 popover: {
-                    title: 'Welcome to Brain Vault',
+                    title: 'Welcome to MemWyre',
                     description: 'Your personal AI-powered knowledge base. Let us show you around!',
                     side: "bottom",
                     align: 'start'
@@ -23,8 +23,8 @@ export const createTour = () => {
             {
                 element: '#tour-knowledge-base',
                 popover: {
-                    title: 'Knowledge Base',
-                    description: 'Here you can see all your stored memories and uploaded documents. Click on any item to view or edit it.',
+                    title: 'Your Memories',
+                    description: 'This is your central knowledge base. All your memories and documents are stored here for easy access.',
                     side: "right",
                     align: 'start'
                 }
@@ -32,46 +32,37 @@ export const createTour = () => {
             {
                 element: '#tour-quick-actions',
                 popover: {
-                    title: 'Quick Actions',
-                    description: 'Quickly add new memories, notes, or ideas. Just type and save!',
+                    title: 'Quick Add',
+                    description: 'Capture new ideas, upload documents, or clip web pages instantly.',
                     side: "bottom",
                     align: 'start'
                 }
             },
             {
-                element: '#tour-upload',
+                element: '#tour-inbox',
                 popover: {
-                    title: 'Upload Files',
-                    description: 'Upload PDF, TXT, or Markdown files to expand your knowledge base.',
-                    side: "left",
-                    align: 'start'
+                    title: 'Inbox',
+                    description: 'Review new incoming memories or processing tasks.',
+                    side: "bottom",
+                    align: 'center'
                 }
             },
             {
                 element: '#tour-retrieval',
                 popover: {
-                    title: 'Ask Your Brain',
-                    description: 'Chat with your knowledge base! Ask questions and get answers based on your stored memories and documents.',
-                    side: "left",
-                    align: 'start'
+                    title: 'Chat with MemWyre',
+                    description: 'Ask questions and get answers based on your knowledge base.',
+                    side: "bottom",
+                    align: 'center'
                 }
             },
             {
                 element: '#tour-memory-map',
                 popover: {
                     title: 'Memory Map',
-                    description: 'Visualize connections between your memories and documents in an interactive map.',
+                    description: 'Visualize how your memories connect in an interactive graph.',
                     side: "bottom",
-                    align: 'start'
-                }
-            },
-            {
-                element: '#tour-settings',
-                popover: {
-                    title: 'Settings',
-                    description: 'Configure your API keys, export your data, and manage your account settings here.',
-                    side: "bottom",
-                    align: 'end'
+                    align: 'center'
                 }
             }
         ]

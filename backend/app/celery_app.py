@@ -1,21 +1,19 @@
-import os
 from celery import Celery
-
-# Get Redis URL from env, default to validation value or loopback
-BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
+from app.core.config import settings
 
 celery_app = Celery(
     "brain_vault_worker",
-    broker=BROKER_URL,
-    backend=BROKER_URL,
+    broker=settings.CELERY_BROKER_URL,
+    backend=settings.REDIS_URL, # Use separate Redis URL if configured, or default to broker
     include=["app.worker"]
 )
-print("Celery App Initialized with include=['app.worker']")
+print(f"Celery App Initialized with broker: {settings.CELERY_BROKER_URL}")
 
 celery_app.conf.task_routes = {
     "app.worker.process_memory_metadata_task": "celery",
     "app.worker.ingest_memory_task": "celery",
     "app.worker.dedupe_memory_task": "celery",
+    "app.worker.extract_chat_facts_task": "celery",
 }
 
 # Optional: Retry customization

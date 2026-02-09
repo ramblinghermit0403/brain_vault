@@ -139,18 +139,60 @@
         </div>
 
         <!-- YouTube Tab -->
-        <div v-else-if="activeTab === 'youtube'" class="h-64 flex flex-col items-center justify-center text-center">
-             <div class="w-16 h-16 rounded-full bg-gray-50 dark:bg-zinc-800 flex items-center justify-center mb-4 text-gray-500 dark:text-gray-400">
-                 <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <div v-else-if="activeTab === 'youtube'" class="h-full flex flex-col transition-all duration-300 ease-out" :class="youtubePreview.videoId ? 'justify-start pt-4' : 'justify-center'">
+             <div class="w-full max-w-md mx-auto transition-all duration-300">
+                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 text-left">YouTube Video URL</label>
+                 <div class="relative">
+                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                         <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                         </svg>
+                     </div>
+                     <input 
+                        v-model="urlInput" 
+                        type="url" 
+                        class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white dark:bg-zinc-800 dark:text-white sm:text-sm" 
+                        placeholder="https://www.youtube.com/watch?v=..."
+                        @keyup.enter="ingest"
+                        @input="handleYouTubeUrlChange"
+                     />
+                 </div>
+                 <p v-if="uploading" class="mt-2 text-xs text-blue-600 dark:text-blue-400 text-left font-medium animate-pulse">
+                     Downloading transcript and analyzing...
+                 </p>
+                 <p v-else class="mt-2 text-xs text-gray-500 text-left">
+                     We'll extract the transcript and add it to your brain.
+                 </p>
              </div>
-             <h3 class="text-lg font-medium text-gray-900 dark:text-white">YouTube Ingestion</h3>
-             <p class="text-gray-500">Coming soon</p>
+             
+             <!-- YouTube Preview -->
+             <div v-if="youtubePreview.videoId" class="w-full max-w-md mx-auto mt-6 animate-slide-up">
+                 <div class="bg-gray-50 dark:bg-zinc-800 rounded-xl overflow-hidden border border-gray-200 dark:border-zinc-700">
+                     <div class="relative">
+                         <img 
+                             :src="youtubePreview.thumbnail" 
+                             :alt="youtubePreview.title || 'Video thumbnail'"
+                             class="w-full h-40 object-cover"
+                         />
+                         <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
+                             <div class="w-14 h-14 rounded-full bg-red-600 flex items-center justify-center">
+                                 <svg class="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                     <path d="M8 5v14l11-7z"/>
+                                 </svg>
+                             </div>
+                         </div>
+                     </div>
+                     <div class="p-4">
+                         <p class="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">{{ youtubePreview.title || 'YouTube Video' }}</p>
+                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">youtube.com</p>
+                     </div>
+                 </div>
+             </div>
         </div>
 
         <!-- Webpage Tab -->
-        <!-- Webpage Tab -->
-        <div v-else-if="activeTab === 'webpage'" class="h-64 flex flex-col items-center justify-center text-center space-y-6">
-             <div class="w-full max-w-md">
+        <div v-else-if="activeTab === 'webpage'" class="h-full flex flex-col transition-all duration-300 ease-out" :class="webpagePreview.url ? 'justify-start pt-4' : 'justify-center'">
+             <div class="w-full max-w-md mx-auto transition-all duration-300">
                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 text-left">Page URL</label>
                  <div class="relative">
                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -164,11 +206,43 @@
                         class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white dark:bg-zinc-800 dark:text-white sm:text-sm" 
                         placeholder="https://example.com/article"
                         @keyup.enter="ingest"
+                        @input="handleWebpageUrlChange"
                      />
                  </div>
-                 <p class="mt-2 text-xs text-gray-500 text-left">
+                 <p v-if="webpagePreview.loading" class="mt-2 text-xs text-blue-600 dark:text-blue-400 text-left font-medium animate-pulse">
+                     Fetching page info...
+                 </p>
+                 <p v-else class="mt-2 text-xs text-gray-500 text-left">
                      We'll extract the main content and add it to your brain.
                  </p>
+             </div>
+             
+             <!-- Webpage Preview -->
+             <div v-if="webpagePreview.url && !webpagePreview.loading" class="w-full max-w-md mx-auto mt-6 animate-slide-up">
+                 <div class="bg-gray-50 dark:bg-zinc-800 rounded-xl overflow-hidden border border-gray-200 dark:border-zinc-700 p-4">
+                     <div class="flex items-start gap-3">
+                         <div class="w-10 h-10 rounded-lg bg-white dark:bg-zinc-700 border border-gray-200 dark:border-zinc-600 flex items-center justify-center shrink-0 overflow-hidden">
+                             <img 
+                                 v-if="webpagePreview.favicon"
+                                 :src="webpagePreview.favicon" 
+                                 class="w-6 h-6"
+                                 @error="webpagePreview.favicon = null"
+                             />
+                             <svg v-else class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                             </svg>
+                         </div>
+                         <div class="min-w-0 flex-1">
+                             <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ webpagePreview.title || webpagePreview.domain }}</p>
+                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ webpagePreview.domain }}</p>
+                         </div>
+                         <div class="shrink-0">
+                             <svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                             </svg>
+                         </div>
+                     </div>
+                 </div>
              </div>
         </div>
 
@@ -181,12 +255,16 @@
           </button>
           
           <button 
-            v-if="activeTab === 'documents' || activeTab === 'webpage'"
+            v-if="activeTab === 'documents' || activeTab === 'webpage' || activeTab === 'youtube'"
             @click="ingest" 
-            :disabled="activeTab === 'documents' ? !selectedFile : !urlInput"
-            class="px-5 py-2 text-sm font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-80 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            :disabled="(activeTab === 'documents' ? !selectedFile : !urlInput) || uploading"
+            class="px-5 py-2 text-sm font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-80 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center gap-2"
           >
-              {{ uploadSuccess ? 'Done' : (activeTab === 'webpage' ? 'Ingest URL' : 'Add Content') }}
+              <svg v-if="uploading" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {{ uploading ? 'Processing...' : (uploadSuccess ? 'Done' : (['webpage', 'youtube'].includes(activeTab) ? 'Ingest' : 'Add Content')) }}
           </button>
       </div>
 
@@ -236,7 +314,9 @@ const close = () => {
 const reset = () => {
     selectedFile.value = null;
     uploadSuccess.value = false;
-    previewText.value = '';
+    urlInput.value = '';
+    youtubePreview.value = { videoId: null, thumbnail: null, title: null };
+    webpagePreview.value = { url: null, domain: null, favicon: null, title: null, loading: false };
     activeTab.value = 'documents';
 };
 
@@ -277,11 +357,83 @@ const formatSize = (bytes) => {
 
 const urlInput = ref('');
 
-const ingest = async () => {
-    if (activeTab.value === 'youtube') {
-        toast.info('Feature coming soon');
+// Preview State
+const youtubePreview = ref({
+    videoId: null,
+    thumbnail: null,
+    title: null
+});
+
+const webpagePreview = ref({
+    url: null,
+    domain: null,
+    favicon: null,
+    title: null,
+    loading: false
+});
+
+let urlDebounceTimer = null;
+
+// Extract YouTube video ID from various URL formats
+const extractYouTubeId = (url) => {
+    if (!url) return null;
+    const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+        /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/
+    ];
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) return match[1];
+    }
+    return null;
+};
+
+// Handle YouTube URL changes
+const handleYouTubeUrlChange = () => {
+    const videoId = extractYouTubeId(urlInput.value);
+    if (videoId) {
+        youtubePreview.value = {
+            videoId: videoId,
+            thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+            title: null  // Title would need API call, showing thumbnail is enough
+        };
+    } else {
+        youtubePreview.value = { videoId: null, thumbnail: null, title: null };
+    }
+};
+
+// Handle Webpage URL changes with debounce
+const handleWebpageUrlChange = () => {
+    clearTimeout(urlDebounceTimer);
+    
+    const url = urlInput.value.trim();
+    if (!url || !url.startsWith('http')) {
+        webpagePreview.value = { url: null, domain: null, favicon: null, title: null, loading: false };
         return;
     }
+    
+    urlDebounceTimer = setTimeout(() => {
+        try {
+            const urlObj = new URL(url);
+            const domain = urlObj.hostname;
+            webpagePreview.value = {
+                url: url,
+                domain: domain,
+                favicon: `https://www.google.com/s2/favicons?sz=64&domain=${domain}`,
+                title: domain,  // Use domain as title since we can't fetch page title client-side
+                loading: false
+            };
+        } catch (e) {
+            webpagePreview.value = { url: null, domain: null, favicon: null, title: null, loading: false };
+        }
+    }, 300);
+};
+
+const ingest = async () => {
+    // if (activeTab.value === 'youtube') {
+    //     toast.info('Feature coming soon');
+    //     return;
+    // }
 
     uploading.value = true;
 
@@ -316,6 +468,19 @@ const ingest = async () => {
             
             uploadSuccess.value = true;
             toast.success('Document uploaded successfully');
+        } else if (activeTab.value === 'youtube') {
+             if (!urlInput.value || !urlInput.value.includes('youtube') && !urlInput.value.includes('youtu.be')) {
+                 toast.error("Please enter a valid YouTube URL");
+                 uploading.value = false;
+                 return;
+             }
+             
+             await api.post('/documents/upload-youtube', { 
+                 url: urlInput.value
+             });
+             
+             uploadSuccess.value = true;
+             toast.success('Video transcript queued for ingestion');
         }
 
         // Wait a bit then close
@@ -338,4 +503,7 @@ const ingest = async () => {
 <style scoped>
 .animate-fade-in { animation: fadeIn 0.3s ease-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+.animate-slide-up { animation: slideUp 0.4s ease-out; }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 </style>

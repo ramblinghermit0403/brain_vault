@@ -144,3 +144,9 @@ body {
   background-color: #F3F4F6 !important;
   color: #000000 !important;
 }
+
+
+
+.font-zalando {
+  font-family: 'Zalando Sans Expanded', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}

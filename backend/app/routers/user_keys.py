@@ -31,6 +31,9 @@ async def add_key(
     """
     Add a new LLM provider key.
     """
+    # FEATURE DISABLED
+    raise HTTPException(status_code=403, detail="User API Keys are currently disabled by administrator.")
+    
     # 1. TODO: Validate Key with Provider (MUST 4)
     # For now, we trust the user input, but in production we should hit a "models" endpoint
     

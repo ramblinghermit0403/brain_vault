@@ -49,6 +49,7 @@
       title="Delete Memory" 
       message="Are you sure you want to delete this memory? This action cannot be undone."
       confirm-text="Delete"
+      :loading="deleting"
       @confirm="handleDeleteConfirm"
       @cancel="handleDeleteCancel"
     />
@@ -64,6 +65,7 @@ import LoadingLogo from '@/components/common/LoadingLogo.vue';
 
 const memories = ref([]);
 const loading = ref(false);
+const deleting = ref(false);
 const toast = useToast();
 
 // Modal state
@@ -91,16 +93,23 @@ const confirmDelete = (id) => {
 const handleDeleteConfirm = async () => {
   if (!itemToDelete.value) return;
   
+  deleting.value = true;
   try {
     await api.delete(`/memory/${itemToDelete.value}`);
     await fetchMemories();
     toast.success('Memory deleted successfully');
+    showModal.value = false;
+    itemToDelete.value = null;
   } catch (error) {
     console.error('Error deleting memory:', error);
     toast.error('Failed to delete item');
+    showModal.value = false; // Close modal on error too? Or keep open? Usually close on success.
+    // If we keep it open on error, user can try again.
+    // But for now let's close or keep open? 
+    // Plan said "After the deletion completes, the modal should close".
+    // I'll keep it open on error so user can retry or cancel.
   } finally {
-    showModal.value = false;
-    itemToDelete.value = null;
+    deleting.value = false;
   }
 };
 

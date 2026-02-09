@@ -13,9 +13,21 @@ export const useChatStore = defineStore('chat', () => {
     const thinking = ref(false);
     const selectedModel = ref('apac.amazon.nova-pro-v1:0'); // Default to Nova Pro
 
+    // Auto-migrate from deprecated models (Force check on init)
+    // Enforce Nova Pro for ANY previous selection containing "gemini"
+    if (selectedModel.value.includes('gemini')) {
+        selectedModel.value = 'apac.amazon.nova-pro-v1:0';
+    }
+
+    // Also check local storage explicitly
+    const storedModel = localStorage.getItem('chat-model');
+    if (storedModel && storedModel.includes('gemini')) {
+        selectedModel.value = 'apac.amazon.nova-pro-v1:0';
+        localStorage.setItem('chat-model', 'apac.amazon.nova-pro-v1:0');
+    }
+
     const availableModels = [
-        { id: 'apac.amazon.nova-pro-v1:0', name: 'Amazon Nova Pro' },
-        { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' }
+        { id: 'apac.amazon.nova-pro-v1:0', name: 'Amazon Nova Pro' }
     ];
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
@@ -49,6 +61,7 @@ export const useChatStore = defineStore('chat', () => {
             sessions.value.unshift(response.data);
             currentSession.value = response.data;
             messages.value = []; // Clear messages for new session
+            currentContext.value = []; // Clear context
             return response.data;
         } catch (e) {
             error.value = e.message;
@@ -68,6 +81,18 @@ export const useChatStore = defineStore('chat', () => {
             // 2. Fetch History
             const response = await axios.get(`${API_URL}/chat/sessions/${sessionId}/history`, headers);
             messages.value = response.data;
+
+            // 3. Restore Context from latest message
+            currentContext.value = [];
+            if (messages.value.length > 0) {
+                // Find last message with sources
+                for (let i = messages.value.length - 1; i >= 0; i--) {
+                    if (messages.value[i].sources && messages.value[i].sources.length > 0) {
+                        currentContext.value = messages.value[i].sources;
+                        break;
+                    }
+                }
+            }
         } catch (e) {
             error.value = e.message;
         } finally {
@@ -142,6 +167,7 @@ export const useChatStore = defineStore('chat', () => {
             const toast = useToast();
             toast.success("History cleared");
             messages.value = [];
+            currentContext.value = []; // Clear context
             currentSession.value = null;
         } catch (e) {
             error.value = "Failed to clear history.";

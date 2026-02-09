@@ -15,16 +15,16 @@
     </div>
     
     <!-- View Mode -->
-    <div v-if="isViewMode" class="flex-1 flex flex-col space-y-4 overflow-hidden">
+    <div v-if="isViewMode" class="flex-1 flex flex-col min-h-0 overflow-hidden space-y-4">
         <div>
             <h3 class="text-xl font-bold text-gray-900 dark:text-white">{{ form.title || 'Untitled' }}</h3>
         </div>
         
-        <div class="flex-1 overflow-y-auto custom-scrollbar prose dark:prose-invert max-w-none">
+        <div class="flex-1 overflow-y-auto custom-scrollbar prose dark:prose-invert max-w-none pr-2">
             <div class="whitespace-pre-wrap text-gray-700 dark:text-gray-300">{{ form.content }}</div>
         </div>
 
-        <div v-if="form.tags" class="pt-4 border-t border-gray-100 dark:border-gray-700">
+        <div v-if="form.tags" class="pt-4 border-t border-gray-100 dark:border-gray-700 shrink-0">
             <div class="flex flex-wrap gap-2">
                 <span v-for="tag in form.tags.split(',').filter(t=>t.trim())" :key="tag" class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-full">
                     #{{ tag.trim() }}
@@ -34,15 +34,15 @@
     </div>
     
     <!-- Edit Mode -->
-    <form v-else @submit.prevent="saveMemory" class="flex-1 flex flex-col space-y-4">
+    <form v-else @submit.prevent="saveMemory" class="flex-1 flex flex-col min-h-0 space-y-4 overflow-hidden">
       <div>
         <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
         <input type="text" id="title" v-model="form.title" required class="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="Memory Title" />
       </div>
       
-      <div class="flex-1">
-        <label for="content" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Content</label>
-        <textarea id="content" v-model="form.content" required rows="10" class="mt-1 block w-full h-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none" placeholder="Write your memory here..."></textarea>
+      <div class="flex-1 flex flex-col min-h-0">
+        <label for="content" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Content</label>
+        <textarea id="content" v-model="form.content" required class="flex-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none p-4" placeholder="Write your memory here..."></textarea>
       </div>
 
       <div>
@@ -50,7 +50,7 @@
         <input type="text" id="tags" v-model="form.tags" class="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="AI, Project, Important" />
       </div>
       
-      <div class="flex justify-end space-x-3 pt-4">
+      <div class="flex justify-end space-x-3 pt-4 border-t border-gray-100 dark:border-gray-700 shrink-0">
         <button type="button" @click="cancel" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
           {{ isEditing && !isViewMode ? 'Cancel Edit' : 'Cancel' }}
         </button>

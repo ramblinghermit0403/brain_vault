@@ -57,7 +57,8 @@ class DedupeService:
             # Query vector store (Sync call)
             # Ensure we are not blocking if possible, but vector_store is sync for now.
             try:
-                results = await vector_store.query(memory.content, n_results=5, where={"user_id": memory.user_id})
+                # Ensure user_id is string to match ingestion
+                results = await vector_store.query(memory.content, n_results=5, where={"user_id": str(memory.user_id)})
                 print(f"Dedupe: Vector store returned {len(results.get('ids', []))} matches")
             except Exception as vs_e:
                 print(f"Dedupe: Vector store query failed: {vs_e}")
@@ -74,10 +75,12 @@ class DedupeService:
                     
                     match_id_val = metadata.get("memory_id")
                     if str(match_id_val) == str(memory_id):
+                        print(f"Dedupe: Skipping self-match ID {match_id_val}")
                         continue
                         
                     # Pinecone returns similarity score (0-1), not distance.
                     similarity = dist * 100
+                    print(f"Dedupe: Candidate ID {match_id_val} Score: {similarity}")
                     
                     if similarity > 40: 
                         try:

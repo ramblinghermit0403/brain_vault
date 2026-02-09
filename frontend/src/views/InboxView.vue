@@ -61,7 +61,7 @@
                            </div>
                            
                            <!-- Similarity Alert -->
-                           <div v-if="similarityData && similarityData.score > 0" class="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md text-sm text-yellow-800 dark:text-yellow-200">
+                           <div v-if="similarityData && similarityData.score > 90" class="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md text-sm text-yellow-800 dark:text-yellow-200">
                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                                <span>
                                    Matches existing content: <span class="font-bold border-b border-yellow-600/30 cursor-pointer" @click="router.push(`/editor/${similarityData.type === 'memory' ? 'mem_' : 'doc_'}${similarityData.source_id}`)">{{ similarityData.source_title }}</span> ({{ similarityData.score }}%)
@@ -120,23 +120,26 @@
                        <button 
                          @click="startEditing(selectedItem)"
                          class="px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 shadow-sm flex items-center gap-2"
+                         :disabled="approving || dismissing"
                        >
                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                          Edit Full Content
                        </button>
                        <button 
                          @click="dismissItem(selectedItem)"
-                         class="px-4 py-2 bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 shadow-sm flex items-center gap-2"
+                         :disabled="approving || dismissing"
+                         class="px-4 py-2 bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 shadow-sm flex items-center gap-2 disabled:opacity-50"
                        >
                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                          Dismiss
                        </button>
                        <button 
                          @click="approveItem(selectedItem)"
-                         :disabled="selectedItem.status === 'approved'"
-                          :class="['px-4 py-2 text-white text-sm font-medium rounded-lg shadow-sm flex items-center gap-2 min-w-[100px] justify-center', selectedItem.status === 'approved' ? 'bg-green-600 cursor-default' : 'bg-black dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black dark:focus:ring-white']"
+                         :disabled="selectedItem.status === 'approved' || approving || dismissing"
+                          :class="['px-4 py-2 text-white text-sm font-medium rounded-lg shadow-sm flex items-center gap-2 min-w-[100px] justify-center', selectedItem.status === 'approved' ? 'bg-green-600 cursor-default' : 'bg-black dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black dark:focus:ring-white disabled:opacity-70']"
                        >
-                         {{ selectedItem.status === 'approved' ? 'Approved' : 'Approve' }}
+                         <LoadingLogo v-if="approving" size="sm" class="w-4 h-4" :isWhite="selectedItem.status !== 'approved'" />
+                         {{ approving ? 'Approving...' : (selectedItem.status === 'approved' ? 'Approved' : 'Approve') }}
                        </button>
                    </div>
                </div>
@@ -158,6 +161,7 @@
       title="Dismiss Item"
       message="Dismiss this item from inbox? This will remove it from pending tasks but keep it in the vault if already saved."
       confirm-text="Dismiss"
+      :loading="dismissing"
       @confirm="confirmDismissItem"
       @cancel="showDismissModal = false"
     />
@@ -173,6 +177,8 @@ import NavBar from '../components/NavBar.vue';
 import ConfirmationModal from '../components/ConfirmationModal.vue';
 import { useToast } from 'vue-toastification';
 
+import LoadingLogo from '@/components/common/LoadingLogo.vue';
+
 const store = useInboxStore();
 const router = useRouter();
 const toast = useToast();
@@ -180,6 +186,10 @@ const selectedItem = ref(null);
 // Script addition for similarityData
 const similarityData = ref(null);
 const newTagInput = ref('');
+
+// Loading States
+const dismissing = ref(false);
+const approving = ref(false);
 
 const addNewTag = async () => {
     if (!newTagInput.value.trim() || !selectedItem.value) return;
@@ -226,7 +236,16 @@ watch(() => selectedItem.value, (newItem) => {
 onMounted(async () => {
   await store.fetchInbox();
   store.connectWebSocket();
-  if (store.items.length > 0 && !selectedItem.value) {
+  
+  const selectedId = route.query.selected;
+  if (selectedId) {
+      const found = store.items.find(i => String(i.id) === String(selectedId));
+      if (found) {
+          selectedItem.value = found;
+      } else if (store.items.length > 0) {
+          selectedItem.value = store.items[0];
+      }
+  } else if (store.items.length > 0 && !selectedItem.value) {
       selectedItem.value = store.items[0];
   }
 });
@@ -276,17 +295,19 @@ const dismissItem = (item) => {
 
 const confirmDismissItem = async () => {
     if (!itemToDismiss.value) return;
+    dismissing.value = true;
     try {
         await store.handleAction(itemToDismiss.value.id, 'dismiss');
         toast.success('Item dismissed');
         if (selectedItem.value?.id === itemToDismiss.value.id) {
             selectedItem.value = store.items.length > 0 ? store.items[0] : null;
         }
+        showDismissModal.value = false;
+        itemToDismiss.value = null;
     } catch (e) {
         toast.error('Failed to dismiss item');
     } finally {
-        showDismissModal.value = false;
-        itemToDismiss.value = null;
+        dismissing.value = false;
     }
 };
 
@@ -309,6 +330,7 @@ const removeTag = async (tagToRemove) => {
 };
 
 const approveItem = async (item) => {
+    approving.value = true;
     try {
         await store.handleAction(item.id, 'approve');
         toast.success('Item approved and moved to memory');
@@ -317,6 +339,8 @@ const approveItem = async (item) => {
         }
     } catch (e) {
         toast.error('Failed to approve item');
+    } finally {
+        approving.value = false;
     }
 };
 </script>

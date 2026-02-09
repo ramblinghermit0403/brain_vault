@@ -26,8 +26,10 @@ class LLMService:
         self.openai_api_key = self.api_key # Backwards compatibility for now
         
     async def generate_response(self, query: str, context: List[str], provider: str = "openai", api_key: Optional[str] = None, user_id: Optional[int] = None) -> str:
-        if not api_key:
-            return "Error: API Key is required."
+        # if not api_key:
+        #    return "Error: API Key is required."
+        # Allow missing key to fall through to provider defaults (e.g. Bedrock env vars)
+        pass
             
         if not context:
             return "I couldn't find any relevant information in your MemWyre to answer that. Please try adding more memories or documents related to your specific question."
@@ -42,45 +44,53 @@ class LLMService:
         )
         
         if provider == "openai":
-            try:
-                llm = ChatOpenAI(api_key=api_key, model="gpt-3.5-turbo")
-                messages = [
-                    SystemMessage(content=system_prompt),
-                    HumanMessage(content=query)
-                ]
-                response = await llm.ainvoke(messages)
-                
-                # Track Usage
-                if user_id:
-                     tokens_in = count_tokens(system_prompt + query)
-                     tokens_out = count_tokens(response.content)
-                     await usage_service.track_usage(user_id, "openai", "gpt-3.5-turbo", tokens_in, tokens_out)
-                     
-                return response.content
-            except Exception as e:
-                return f"OpenAI Error: {str(e)}"
+            if not api_key:
+                # Fallback to Bedrock if OpenAI key missing but user just used default provider
+                provider = "bedrock"
+            else:
+                try:
+                    llm = ChatOpenAI(api_key=api_key, model="gpt-3.5-turbo")
+                    messages = [
+                        SystemMessage(content=system_prompt),
+                        HumanMessage(content=query)
+                    ]
+                    response = await llm.ainvoke(messages)
+                    
+                    # Track Usage
+                    if user_id:
+                         tokens_in = count_tokens(system_prompt + query)
+                         tokens_out = count_tokens(response.content)
+                         await usage_service.track_usage(user_id, "openai", "gpt-3.5-turbo", tokens_in, tokens_out)
+                         
+                    return response.content
+                except Exception as e:
+                    return f"OpenAI Error: {str(e)}"
+        
+        # Check 'gemini' block...
+        if provider == "gemini":
+             if not api_key:
+                 provider = "bedrock" # Fallback
+             else:
+                try:
+                    genai.configure(api_key=api_key)
+                    # Using gemini-1.5-flash as requested
+                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    
+                    combined = f"{system_prompt}\n\nUser Question: {query}"
+                    response = model.generate_content(combined)
+                    
+                    # Track Usage
+                    if user_id:
+                         # Gemini doesn't always give token counts in simple response, assume estimate
+                         tokens_in = count_tokens(combined)
+                         tokens_out = count_tokens(response.text)
+                         await usage_service.track_usage(user_id, "gemini", "gemini-1.5-flash", tokens_in, tokens_out)
+    
+                    return response.text
+                except Exception as e:
+                     return f"Gemini Error: {str(e)}"
 
-        elif provider == "gemini":
-            try:
-                genai.configure(api_key=api_key)
-                # Using gemini-2.5-flash as requested
-                model = genai.GenerativeModel('gemini-2.5-flash')
-                
-                combined = f"{system_prompt}\n\nUser Question: {query}"
-                response = model.generate_content(combined)
-                
-                # Track Usage
-                if user_id:
-                     # Gemini doesn't always give token counts in simple response, assume estimate
-                     tokens_in = count_tokens(combined)
-                     tokens_out = count_tokens(response.text)
-                     await usage_service.track_usage(user_id, "gemini", "gemini-2.5-flash", tokens_in, tokens_out)
-
-                return response.text
-            except Exception as e:
-                return f"Gemini Error: {str(e)}"
-
-        elif provider == "bedrock" or "nova" in provider:
+        if provider == "bedrock" or "nova" in provider:
             try:
                 # Default to Nova Pro (APAC) if not specified
                 model_id = "apac.amazon.nova-pro-v1:0" 
@@ -115,15 +125,15 @@ class LLMService:
         """
         Extract Title, Summary, and Tags from content using LLM.
         """
+        # Log intent immediately to debug "Short Note" issues
+        print(f"LLM Service: Extracting metadata for content (len={len(content)})") 
+
         # Quick heuristic to avoid burning tokens on tiny content
         if len(content) < 3:
             return {"title": "Short Note", "tags": [], "summary": content}
             
         # Check for user key, but allow Fallback to Bedrock (System Credentials)
-        target_key = api_key
-        
-        # Log intent
-        print(f"LLM Service: Extracting metadata for content (len={len(content)})") 
+        target_key = api_key 
 
         import json
         import re
@@ -197,16 +207,16 @@ Existing Tags Context:
             elif target_key: # Assume Gemini
                 genai.configure(api_key=target_key)
                 try:
-                    # Try gemini-2.5-flash w/ JSON mode
+                    # Try gemini-1.5-flash w/ JSON mode
                     try:
-                        model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
+                        model = genai.GenerativeModel('gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
                         combined_prompt = f"{system_instruction}\n\n{user_message}"
                         # Check if model supports it (response_mime_type)
                         res = model.generate_content(combined_prompt)
                         text = res.text
                     except Exception as e_model:
-                        print(f"Gemini 2.5 failed ({e_model}), trying gemini-2.5-flash fallback")
-                        model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
+                        print(f"Gemini 1.5 failed ({e_model}), trying gemini-1.5-flash fallback")
+                        model = genai.GenerativeModel('gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
                         combined_prompt = f"{system_instruction}\n\n{user_message}"
                         res = model.generate_content(combined_prompt)
                         text = res.text
@@ -216,24 +226,24 @@ Existing Tags Context:
             else: 
                  return {}
 
-            # Clean JSON
-            text = text.replace("```json", "").replace("```", "").strip()
-            print(f"LLM Raw Response: {text}")
-            
-            try:
-                data = json.loads(text)
-                print(f"LLM Service: Parsed Data: {data}")
-                return data
-            except json.JSONDecodeError:
-                print(f"LLM Service: JSON Decode Error. Raw: {text}")
-                # Fallback: try to extract JSON substring if mixed with text
-                match = re.search(r'\{.*\}', text, re.DOTALL)
-                if match:
-                    try:
-                        return json.loads(match.group())
-                    except:
-                        pass
-                return {}
+        # Clean JSON
+        text = text.replace("```json", "").replace("```", "").strip()
+        print(f"LLM Raw Response: {text}")
+        
+        try:
+            data = json.loads(text)
+            print(f"LLM Service: Parsed Data: {data}")
+            return data
+        except json.JSONDecodeError:
+            print(f"LLM Service: JSON Decode Error. Raw: {text}")
+            # Fallback: try to extract JSON substring if mixed with text
+            match = re.search(r'\{.*\}', text, re.DOTALL)
+            if match:
+                try:
+                    return json.loads(match.group())
+                except:
+                    pass
+            return {}
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
     async def generate_chunk_enrichment(self, content: str, api_key: Optional[str] = None) -> dict:
@@ -265,53 +275,61 @@ Rules:
 
         user_message = f"Chunk Content:\n{content[:2000]}"
         
+        # 1. Try Bedrock (Nova Pro) First - Always attempt if available
         try:
-            used_bedrock = False
-            # 1. Try Bedrock (Nova Pro) First - Always attempt if available
-            try:
-                 # We assume availability of AWS credentials
-                 llm = ChatBedrock(model_id="apac.amazon.nova-pro-v1:0", model_kwargs={"temperature": 0}, config=AWS_CONFIG)
-                 messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_message)]
-                 res = await llm.ainvoke(messages)
-                 text = res.content
-                 used_bedrock = True
-            except Exception as e:
-                 # Only print if we expected it to work or for debugging
-                 # print(f"Bedrock chunk enrichment failed: {e}")
-                 pass
-
-            if not used_bedrock:
-                # Fallback to configured keys
-                if target_key and target_key.startswith("sk-"):
-                    llm = ChatOpenAI(api_key=target_key, model="gpt-3.5-turbo", temperature=0)
-                    messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_message)]
-                    res = await llm.ainvoke(messages)
-                    text = res.content
-                elif target_key:
-                    # Gemini
-                    genai.configure(api_key=target_key)
-                    model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
-                    res = model.generate_content(f"{system_prompt}\n\n{user_message}")
-                    text = res.text
-                else:
-                    return {}
-                
-            import json
-            import re
-            
-            # Clean
-            text = text.replace("```json", "").replace("```", "").strip()
-            
-            try:
-                return json.loads(text)
-            except:
-                match = re.search(r'\{.*\}', text, re.DOTALL)
-                if match: return json.loads(match.group())
-                return {}
-                
+                # We assume availability of AWS credentials
+                llm = ChatBedrock(model_id="apac.amazon.nova-pro-v1:0", model_kwargs={"temperature": 0}, config=AWS_CONFIG)
+                messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_message)]
+                res = await llm.ainvoke(messages)
+                text = res.content
+                used_bedrock = True
         except Exception as e:
-            print(f"Chunk enrichment failed: {e}")
-            return {}
+                # Only print if we expected it to work or for debugging
+                # print(f"Bedrock chunk enrichment failed: {e}")
+                pass
+
+        if not used_bedrock:
+            # Fallback to configured keys
+            if target_key and target_key.startswith("sk-"):
+                llm = ChatOpenAI(api_key=target_key, model="gpt-3.5-turbo", temperature=0)
+                messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_message)]
+                res = await llm.ainvoke(messages)
+                text = res.content
+            elif target_key:
+                # Gemini
+                genai.configure(api_key=target_key)
+                model = genai.GenerativeModel('gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
+                res = model.generate_content(f"{system_prompt}\n\n{user_message}")
+                text = res.text
+            else:
+                 raise ValueError("No valid API Key or Bedrock configuration found for chunk enrichment")
+            
+        import json
+        import re
+        
+        # Clean
+        text = text.replace("```json", "").replace("```", "").strip()
+        
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            # Attempt to fix invalid escapes
+            try:
+                import re
+                # Replace backslashes not followed by valid escape chars
+                clean_text = re.sub(r'\\(?![/u"\\bfnrt])', r'\\\\', text)
+                return json.loads(clean_text)
+            except:
+                    pass
+
+            match = re.search(r'\{.*\}', text, re.DOTALL)
+            if match: 
+                try:
+                        return json.loads(match.group())
+                except:
+                        pass
+            # If we got text but couldn't parse JSON, that's a failure we should know about
+            raise ValueError(f"Failed to parse JSON from LLM response: {text[:100]}...")
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
     async def extract_facts_from_text(self, text: str, api_key: Optional[str] = None, reference_date: Optional[datetime] = None) -> List[dict]:
@@ -385,7 +403,7 @@ Rules:
                     text_response = res.content
                 elif target_key: # Gemini
                     genai.configure(api_key=target_key)
-                    model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
+                    model = genai.GenerativeModel('gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
                     res = model.generate_content(f"{system_prompt}\n\n{user_message}")
                     text_response = res.text
                 else:
@@ -428,10 +446,6 @@ Rules:
         """
         target_key = api_key or self.api_key
         
-        if not target_key:
-            print("Title Generation: No API Key found.")
-            return "New Chat"
-        
         system_prompt = (
             "You are a helpful assistant that generates concise titles for chat sessions. "
             "Generate a short, descriptive title (maximum 6 words) for the provided conversation start. "
@@ -439,26 +453,29 @@ Rules:
         )
         
         try:
-            used_bedrock = False
-             # 1. Try Bedrock
-            if not target_key or (len(target_key) < 10):
-                try:
-                     llm = ChatBedrock(model_id="apac.amazon.nova-pro-v1:0", model_kwargs={"temperature": 0.7}, config=AWS_CONFIG)
-                     messages = [SystemMessage(content=system_prompt), HumanMessage(content=conversation_context)]
-                     res = await llm.ainvoke(messages)
-                     return res.content.strip()
-                except Exception as e:
-                     print(f"Bedrock title gen failed: {e}")
+             # 1. Try Bedrock First (Unconditionally)
+            try:
+                 llm = ChatBedrock(model_id="apac.amazon.nova-pro-v1:0", model_kwargs={"temperature": 0.7}, config=AWS_CONFIG)
+                 messages = [SystemMessage(content=system_prompt), HumanMessage(content=conversation_context)]
+                 res = await llm.ainvoke(messages)
+                 return res.content.strip()
+            except Exception as e:
+                 print(f"Bedrock title gen failed: {e}")
+                 # Continue to fallbacks
 
-            if target_key and target_key.startswith("sk-"):
+            if not target_key:
+                print("Title Generation: Bedrock failed and no API Key found.")
+                return "New Chat"
+
+            if target_key.startswith("sk-"):
                 llm = ChatOpenAI(api_key=target_key, model="gpt-3.5-turbo", temperature=0.7)
                 messages = [SystemMessage(content=system_prompt), HumanMessage(content=conversation_context)]
                 res = await llm.ainvoke(messages)
                 return res.content.strip()
+            # Gemini
             else:
-                # Gemini
                 if target_key: genai.configure(api_key=target_key)
-                model = genai.GenerativeModel('gemini-2.5-flash')
+                model = genai.GenerativeModel('gemini-1.5-flash')
                 res = model.generate_content(f"{system_prompt}\n\nConversation:\n{conversation_context}")
                 return res.text.strip()
         except Exception as e:

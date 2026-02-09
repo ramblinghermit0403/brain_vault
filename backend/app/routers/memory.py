@@ -18,6 +18,7 @@ from app.services.ingestion import ingestion_service
 from app.services.metadata_extraction import metadata_service
 from app.db.session import AsyncSessionLocal
 from app.worker import process_memory_metadata_task, ingest_memory_task, dedupe_memory_task
+from app.services.memory_service import memory_service
 
 
 router = APIRouter()
@@ -83,79 +84,24 @@ async def create_memory(
     print(f"Creating memory for user: {current_user.id}")
     print(f"Memory data: {memory_in}")
     
-    # Generate embedding ID
-    embedding_id = str(uuid.uuid4())
-    
-    # Check Auto-Approve Setting
-    auto_approve = True
-    user_settings = current_user.settings
-    # ... Same logic ...
-    
-    if user_settings:
-        if isinstance(user_settings, str):
-            import json
-            try:
-                user_settings = json.loads(user_settings)
-            except:
-                user_settings = {}
-                
-        if isinstance(user_settings, dict):
-            auto_approve = user_settings.get("auto_approve", True)
-            
-    initial_status = "approved" if auto_approve else "pending"
-    
+    # Define is_extension before usage
     is_extension = "extension" in (memory_in.tags or [])
-    
-    show_in_inbox = True 
-    if initial_status == "approved" and not is_extension:
-        show_in_inbox = False
-        
-    memory = Memory(
-        title=memory_in.title,
-        content=memory_in.content,
-        user_id=current_user.id,
-        tags=memory_in.tags,
-        embedding_id=embedding_id,
-        status=initial_status,
-        show_in_inbox=show_in_inbox
-    )
-    
-    # MemoryBench Patch: Allow backdating if explicitly tagged
-    normalized_tags = [t.lower() for t in (memory_in.tags or [])]
-    if "memorybench" in normalized_tags and memory_in.created_at:
-        print(f"Applying MemoryBench backdate: {memory_in.created_at}")
-        memory.created_at = memory_in.created_at
-    else:
-        print(f"No backdate applied. Tags: {memory_in.tags}, CreatedAt: {memory_in.created_at}")
-        
-    db.add(memory)
-    try:
-        await db.commit()
-        print("Memory committed to DB")
-    except Exception as e:
-        print(f"Error committing to DB: {e}")
-        await db.rollback()
-        raise e
-        
-    await db.refresh(memory)
-    print(f"Memory ID: {memory.id}")
-    
-    # Trigger Background Analysis (Auto-Tagging + Similarity) via Celery
-    process_memory_metadata_task.delay(memory.id, current_user.id)
-    
-    # Ingest and Add to Vector DB via Celery
-    if initial_status == "approved":
-        ingest_memory_task.delay(
-            memory.id,
-            current_user.id,
-            memory_in.content,
-            memory_in.title,
-            memory_in.tags,
-            "user"
-        )
 
-    # Trigger Dedupe Job (Background Celery)
-    dedupe_memory_task.delay(memory.id)
+    # Delegate to Shared Service
+    memory = await memory_service.create_memory(
+        db=db,
+        user=current_user,
+        content=memory_in.content,
+        title=memory_in.title,
+        source="extension" if is_extension else "web-app", # Or preserve existing logic? It was "user" in ingest call but source_llm wasn't set explicitly in model unless default. 
+        # The model defines source_llm default="user". 
+        # The ingest call used "user". 
+        # API didn't set source_llm on Memory init, so it defaulted to "user". 
+        # Let's pass "user" or derive from existing logic. 
+        # Actually, let's keep it simple and consistent.
+        tags=memory_in.tags,
+        created_at=memory_in.created_at
+    )
 
     
     return memory
@@ -240,8 +186,9 @@ async def read_memories(
             "user_id": mem.user_id,
             "created_at": mem.created_at,
             "updated_at": mem.updated_at,
+            "updated_at": mem.updated_at,
             "tags": mem.tags,
-            "type": "memory"
+            "doc_type": "memory"
         })
         
     for doc in documents:
@@ -254,8 +201,9 @@ async def read_memories(
             "content": doc.content if doc.content else f"Uploaded Document: {doc.source} ({doc.file_type})",
             "user_id": doc.user_id,
             "created_at": doc.created_at,
+            "created_at": doc.created_at,
             "updated_at": None,
-            "type": doc_type,
+            "doc_type": doc_type,
             "tags": doc.tags
         })
     
@@ -305,11 +253,54 @@ async def update_memory(
     """
     Update a memory.
     """
+    """
+    Update a memory or document.
+    """
+    # Handle Document Update
     if memory_id.startswith("doc_"):
-        raise HTTPException(status_code=400, detail="Cannot edit documents via memory editor")
+        doc_id = int(memory_id.split("_")[1])
+        from app.models.document import Document
+        result = await db.execute(select(Document).where(Document.id == doc_id, Document.user_id == current_user.id))
+        document = result.scalars().first()
+        if not document:
+             raise HTTPException(status_code=404, detail="Document not found")
         
+        document.title = memory_in.title
+        document.content = memory_in.content
+        document.tags = memory_in.tags
+        
+        await db.commit()
+        await db.refresh(document)
+        
+        # Offload to Background Task
+        ingest_memory_task.delay(
+            memory_id=document.id,
+            user_id=current_user.id,
+            content=document.content,
+            title=document.title,
+            tags=document.tags,
+            source="document-update",
+            doc_type="document",
+            mode="replace"
+        )
+        
+        return {
+            "id": f"doc_{document.id}",
+            "title": document.title,
+            "content": document.content,
+            "user_id": document.user_id,
+            "created_at": document.created_at,
+            "updated_at": document.updated_at,
+            "tags": document.tags,
+            "type": "document"
+        }
+
+    # Handle Memory Update
     if "_" in memory_id:
-        real_id = int(memory_id.split("_")[1])
+        try:
+            real_id = int(memory_id.split("_")[1])
+        except:
+             raise HTTPException(status_code=400, detail="Invalid ID format")
     else:
         try:
             real_id = int(memory_id)
@@ -327,95 +318,18 @@ async def update_memory(
     await db.commit()
     await db.refresh(memory)
     
-    # Update Vector DB (Delete old, add new)
-    if memory.embedding_id:
-        # If we have a single embedding_id stored, delete it. 
-        # But if we switch to chunking, we might have multiple.
-        # The Memory model only has one embedding_id column.
-        # This implies the original design didn't support chunking for memories properly, 
-        # or it stored the ID of the first chunk?
-        # create_memory generates one embedding_id for the Memory object, 
-        # but ingestion_service generates new IDs for chunks.
-        # We should probably delete by metadata filter if possible, but vector_store.delete takes IDs.
-        # For now, let's delete the one we know.
-        await vector_store.delete(ids=[memory.embedding_id])
-    
-    # Chunk and process
-    # Chunk and process
-    # Chunk and process
-    ids, documents_content, enriched_chunk_texts, metadatas, sparse_values = await ingestion_service.process_text(
-        text=memory.content,
-        document_id=memory.id, # Using memory.id as document_id for ingestion
+    # Offload to Background Task
+    ingest_memory_task.delay(
+        memory_id=memory.id,
+        user_id=current_user.id,
+        content=memory.content,
         title=memory.title,
+        tags=memory.tags,
+        source="memory-update",
         doc_type="memory",
-        metadata={"user_id": current_user.id, "memory_id": memory.id, "tags": str(memory.tags) if memory.tags else ""}
+        mode="replace"
     )
-    
-    
-    # Update memory with the first embedding ID
-    if ids:
-        memory.embedding_id = ids[0]
-        # Save Chunks to DB
-        from app.models.document import Chunk
-        import json
-        
-        # Delete existing chunks for this memory first?
-        # Ideally yes, if we are re-processing content.
-        # But 'chunks' relationship defaults to append unless we clear.
-        # memory.chunks is a relationship.
-        # Let's delete old ones manually to be safe.
-        # But wait, Chunk model has memory_id.
-        await db.execute(select(Chunk).where(Chunk.memory_id == memory.id).execution_options(synchronize_session=False))
-        # Logic to delete? 'delete(Chunk).where...'
-        from sqlalchemy import delete
-        await db.execute(delete(Chunk).where(Chunk.memory_id == memory.id))
-        
-        for i, (embedding_id, chunk_content) in enumerate(zip(ids, documents_content)):
-            meta = metadatas[i]
-            
-            qas = []
-            if meta.get("generated_qas"):
-                try:
-                    qas = json.loads(meta.get("generated_qas"))
-                except:
-                    pass
-            
-            entities = []
-            if meta.get("entities"):
-                try:
-                    entities = json.loads(meta.get("entities"))
-                except:
-                    pass
-                    
-            chunk = Chunk(
-                memory_id=memory.id,
-                chunk_index=i,
-                text=chunk_content,
-                embedding_id=embedding_id,
-                summary=meta.get("summary"),
-                generated_qas=qas,
-                entities=entities,
-                metadata_json=meta
-            )
-            db.add(chunk)
-            
-        await db.commit()
 
-    try:
-        await vector_store.add_documents(
-            ids=ids,
-            documents=enriched_chunk_texts,
-            metadatas=metadatas,
-            sparse_values=sparse_values
-        )
-    except Exception as e:
-        # Log the error or handle it as appropriate. For now, we'll just print.
-        print(f"Error adding documents to vector store: {e}")
-        # Decide how to proceed if adding to vector store fails.
-        # For example, you might want to revert the DB commit or raise an HTTPException.
-        # For this change, we'll let the function continue and return the memory.
-
-    # Return with prefix
     return {
         "id": f"mem_{memory.id}",
         "title": memory.title,

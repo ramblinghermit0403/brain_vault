@@ -61,7 +61,7 @@ class SQLChatMessageHistory(BaseChatMessageHistory):
                     messages.append(SystemMessage(content=row.content))
             return messages
 
-    async def add_message(self, message: BaseMessage) -> int:
+    async def add_message(self, message: BaseMessage, sources: List[Dict] = None) -> int:
         async with AsyncSessionLocal() as db:
             role = MessageRole.USER
             if isinstance(message, AIMessage):
@@ -75,10 +75,29 @@ class SQLChatMessageHistory(BaseChatMessageHistory):
                 content=message.content,
                 created_at=datetime.utcnow()
             )
+            
+            # Save Sources/Metadata if provided
+            if sources:
+                import json
+                db_msg.meta_info = json.dumps({"sources": sources})
+                
             db.add(db_msg)
             await db.commit()
             await db.refresh(db_msg)
             return db_msg.id
+
+# ... (rest of class)
+
+# ... inside process_message ...
+
+            # Save AI Response and get ID
+            ai_message_id = await chat_history.add_message(AIMessage(content=output), sources=sources)
+            
+            return {
+                "output": output,
+                "sources": sources,
+                "message_id": ai_message_id
+            }
             
     async def clear(self) -> None:
         pass
@@ -105,6 +124,49 @@ class AgentService:
     def __init__(self):
         # Allow overriding provider via settings? for now default to configured.
         pass
+
+    def _build_memwyre_context(self, results: List[Dict[str, Any]]) -> str:
+        """
+        Format retrieved context using MemWyre standards (Time-Aware).
+        Ported from frontend TS logic.
+        """
+        snippets = []
+        for i, r in enumerate(results):
+            meta = r.get("metadata", {})
+            chunk = r.get("chunk", None) # Chunk object if available
+            
+            # Extract Temporal Signals
+            valid_from = meta.get("valid_from")
+            valid_until = meta.get("valid_until")
+            created_at = meta.get("created_at")
+            
+            # Fallback
+            generic_date = meta.get("date") or meta.get("timestamp")
+            
+            # Construct Temporal Line
+            vals = []
+            if valid_from: vals.append(f"Event Date: {valid_from}")
+            if valid_until: vals.append(f"| Valid Until: {valid_until}")
+            if created_at: vals.append(f"| Recorded: {created_at}")
+            
+            date_str = " ".join(vals)
+            if not date_str and generic_date: date_str = f"Date: {generic_date}"
+            if not date_str: date_str = "Date: Unknown"
+            
+            # Content Construction
+            content = r.get("text", "")
+            # If we have chunk object with separate text, adhere to TS logic:
+            # "Fact: {r.text}\nChunk: {r.chunk.text}"
+            # But specific "chunk" object access might differ in python dict
+            # In retrieval_service, 'chunk' key holds the SQL model. 
+            if chunk:
+               # chunk is SQL model, so chunk.text
+               if hasattr(chunk, 'text') and chunk.text and chunk.text != content:
+                   content = f"Fact: {content}\nChunk: {chunk.text}"
+            
+            snippets.append(f"[Result {i + 1}] ({date_str.strip()})\nContent: {content}")
+            
+        return "\n\n---\n\n".join(snippets)
         
     async def process_message(
         self, 
@@ -143,23 +205,35 @@ class AgentService:
                         max_tokens=max_tokens # New param
                     )
                 raise ValueError("OpenAI API Key not configured.")
-            elif "nova" in model_name.lower():
+            elif "nova" in model_name.lower() or "bedrock" in model_name.lower():
                 return ChatBedrock(
-                    model_id="apac.amazon.nova-pro-v1:0",
-                    model_kwargs={"temperature": temperature, "maxTokens": max_tokens}
+                    model_id=model_name if "nova" in model_name else "apac.amazon.nova-pro-v1:0",
+                    model_kwargs={"temperature": temperature, "maxTokens": max_tokens},
+                    config=settings.AWS_CONFIG if hasattr(settings, "AWS_CONFIG") else None
                 )
             else:
                 if settings.OPENAI_API_KEY: return ChatOpenAI(api_key=settings.OPENAI_API_KEY, model="gpt-4o", temperature=temperature, max_tokens=max_tokens)
-                if google_key: return ChatGoogleGenerativeAI(google_api_key=google_key, model="gemini-2.5-flash", temperature=temperature, max_output_tokens=max_tokens)
-                # Fallback check for Bedrock Nova if configured via implicit Boto3 env vars
+                if google_key: return ChatGoogleGenerativeAI(google_api_key=google_key, model="gemini-1.5-flash", temperature=temperature, max_output_tokens=max_tokens)
+                # Fallback: Default to Nova Pro (Bedrock)
+                # This assumes AWS Credentials are present in the environment
                 try:
-                    return ChatBedrock(model_id="apac.amazon.nova-pro-v1:0", model_kwargs={"temperature": temperature})
-                except:
-                    pass
-                    
-                raise ValueError("No LLM API keys configured.")
+                    return ChatBedrock(
+                        model_id="apac.amazon.nova-pro-v1:0", 
+                        model_kwargs={"temperature": temperature, "maxTokens": max_tokens},
+                        config=settings.AWS_CONFIG if hasattr(settings, "AWS_CONFIG") else None
+                    )
+                except Exception as e:
+                    # Only raise if Bedrock also fails
+                    raise ValueError(f"No LLM keys configured and Bedrock default failed: {e}")
 
-        llm = get_llm(model)
+        try:
+            llm = get_llm(model)
+        except ValueError as e:
+            return {
+                "output": f"Configuration Error: {str(e)} Please check your API keys in Settings.",
+                "sources": [],
+                "message_id": 0
+            }
              
         # 3. Setup Tools
         
@@ -220,36 +294,11 @@ class AgentService:
             coroutine=search_memory_wrapper
         )
         
-        # 3.2 Save Tool
-        async def save_fact_wrapper(fact: str):
-            """Save a fact."""
-            from app.models.memory import Memory
-            from app.db.session import AsyncSessionLocal
-            async with AsyncSessionLocal() as db:
-                mem = Memory(
-                   user_id=user_id,
-                   content=fact,
-                   title="Agent Fact",
-                   source_llm="agent",
-                   status="approved",
-                   tags=["auto-fact"],
-                   show_in_inbox=False
-                )
-                db.add(mem)
-                await db.commit()
-                from app.worker import ingest_memory_task
-                ingest_memory_task.delay(mem.id, user_id, fact, "Agent Fact", ["auto-fact"], "agent")
-            return "Fact saved successfully."
-
-        save_fact_tool_instance = StructuredTool.from_function(
-            func=save_fact_wrapper,
-            name="save_fact",
-            description="Save a fact/note to memory.",
-            args_schema=SaveFactInput,
-            coroutine=save_fact_wrapper
-        )
+        # 3.2 Save Tool REMOVED (Side-car extraction used instead)
+        # async def save_fact_wrapper(fact: str): ... 
         
-        tools = [search_memory_tool_instance, save_fact_tool_instance]
+        # Only Search Tool remains available to the Agent
+        tools = [search_memory_tool_instance]
         
         # 4. Create Agent (LangGraph)
         # This creates a compiled state graph (Runnable)
@@ -263,12 +312,9 @@ class AgentService:
         
         # 5.1 PRE-FETCH CONTEXT (Smart RAG)
         # Instead of waiting for tool use, we proactively fetch relevant context
-        # This gives the agent "reasoning text" immediately.
         context_str = ""
         try:
-            # We need a db session for retrieval
             async with AsyncSessionLocal() as db:
-                # Top k=3 for immediate context
                 results = await retrieval_service.search_memories(
                     query=message,
                     user_id=user_id,
@@ -276,33 +322,78 @@ class AgentService:
                     top_k=3
                 )
                 if results:
-                    formatted_ctx = []
-                    for res in results:
-                        meta = res["metadata"]
-                        title = meta.get("title", "Untitled")
-                        # Include summary if available for denser context
-                        content = res["text"]
-                        if meta.get("summary"):
-                             content = f"Summary: {meta['summary']}\nDetails: {content}"
-                        formatted_ctx.append(f"Source: {title}\nContent: {content}")
-                    
-                    if formatted_ctx:
-                        context_str = "\n\n=== RELEVANT MEMORY CONTEXT ===\n" + "\n---\n".join(formatted_ctx) + "\n=============================\n"
+                    # Use MemWyre Context Builder
+                    formatted_ctx_str = self._build_memwyre_context(results)
+                    context_str = formatted_ctx_str
         except Exception as e:
             logger.error(f"Context pre-fetch failed: {e}")
 
-        # Define System Instruction
-        instruction = (
-            "You are a helpful assistant with access to a Brain Vault memory. "
-            "1. If the user asks a question or asks to recall/search, USE 'search_memory' to find the answer and PROVIDE THE ANSWER directly. Do NOT save facts about the search itself. "
-            "2. If the user provides NEW facts, notes, or memories to store, call 'save_fact' for each discrete item. "
-            "3. If the user asks to 'recall' or 'retrieve', your primary job is to SEARCH and ANSWER, not to save."
-        )
+        # ---------------------------------------------------------
+        # 5.2 SIDE-CAR FACT EXTRACTION (DEFERRED TO BACKGROUND)
+        # Moved to Celery worker to reduce response latency.
+        # The task is dispatched AFTER the agent responds (see below).
+        # ---------------------------------------------------------
 
-        # "instruction" acts as the System Prompt
-        # We append the context to the system instruction so the agent "knows" it.
-        final_instruction = instruction + context_str
-        instruction_msg = SystemMessage(content=final_instruction)
+        # Define System Instruction (MemWyre Prompt Logic)
+        question_date_str = datetime.now().strftime('%Y-%m-%d')
+        
+        instruction = f"""You are a question-answering system. Based on the retrieved context below, answer the question.
+
+Question: {message}
+Question Date: {question_date_str}
+
+Retrieved Context:
+{context_str}
+
+**Understanding the Context:**
+The context contains search results from a memory system. Each result has multiple components you can use:
+
+1. **Snippet Result**: The text content found in relevant documents or memories.
+2. **Dates & Timing**:
+   - **Event Date**: This is the **PRE-RESOLVED Absolute Date** of the event (derived from 'valid_from').
+     * **Start Date Rule**: If the text suggests a duration (e.g. "last week", "camping trip", "picnic week"), treat this date as the **START** of that period.
+     * **Timezone Tolerance**: Stored dates are in UTC. If your calculated answer seems off by 1 day (e.g. June 1st vs June 2nd), acknowledge that the event likely occurred **around** this date or **starting** this week.
+     * **Trust the System**: Do NOT try to re-calculate "last week" from the current date. The system has done it for you and put it here.
+   - **Valid Until**: The **End Date** of the event.
+   - **Range**: If 'Valid Until' is present, the event covers the [Event Date, Valid Until] range. Use this range in your answer.
+
+**How to Answer:**
+1. **Analyze Temporal Context**:
+   - Does the text refer to a "Day" (e.g. "On Friday") or a "Period" (e.g. "last week")?
+2. **Formulate Date**:
+   - **For Periods**: Answer with "The week of [Event Date]" or "Starting [Event Date]". Avoid asserting strictly "On [Event Date]" if the event is a week long.
+   - **For Specific Days**: Use the Event Date.
+3. **Address Mismatches**:
+   - If the Question expects a range ("When did she...") and facts are broad, use a Range.
+   - **Missing by a Day**: If the date falls on a boundary (e.g. 1st vs 30th), be inclusive. "The week before X" often implies the week *ending* on X or *starting* 7 days prior. If your date is June 1st and target is June 9th, "Week of June 1st" is the right answer.
+
+Instructions:
+- First, think through the problem step by step. Show your reasoning process.
+- **Explicitly cite the dates** found.
+- **Prioritize Ranges/Periods** over single dates for broad events.
+- When answering "when" questions, if specific date references (e.g., "The week before 9 June 2023", "The Friday before 15 July 2023") are found in the context, return them directly along with the date in the answer.
+- If you find references like "last week" or "two weekends ago" while resolving temporal context, return them as "week before ${{questionDate || "the conversation date"}}" or "2 weekends before ${{questionDate || "the conversation date"}}".
+- Base your answer ONLY on the provided context.
+
+- Base your answer ONLY on the provided context.
+
+**Response Format:**
+- Output your answer PURELY in Markdown.
+- Think step by step, then provide your answer.
+
+Reasoning:
+[Your step-by-step reasoning process here]
+
+Answer:
+[Your final answer here]
+
+---
+ADDITIONAL AGENT INSTRUCTIONS:
+1. The above is your primary directive for ANSWERING questions based on the provided context.
+2. Facts are extracted automatically by the system. You do NOT need to call tools to save facts.
+3. If the context is insufficient, you CAN call 'search_memory' to find more information, but PREFER using the 'Retrieved Context' provided above."""
+
+        instruction_msg = SystemMessage(content=instruction)
         
         # history_messages already includes the current user message (added at L245)
         input_messages = [instruction_msg] + history_messages
@@ -326,50 +417,83 @@ class AgentService:
             # In LangGraph, tool outputs are ToolMessages.
             from langchain_core.messages import ToolMessage
             
+            # No logic needed for tool messages since we use SideCar/PreFetch mostly.
+            # But keeping it just in case:
             for msg in messages_out:
                 if isinstance(msg, ToolMessage) and msg.name == "search_memory":
-                    observation = msg.content
-                    # Parse the observation string which mimics document content
-                    # Format: "Source: Title [ID: 123]\nContent: ..."
-                    if isinstance(observation, str) and "Source: " in observation:
-                        parts = observation.split("Source: ")
-                        for part in parts[1:]:
-                            # title_line might look like "My Doc [ID: 5]"
-                            title_line = part.split("\nContent:")[0].strip()
-                            
-                            # Parse ID if present
-                            doc_id = None
-                            title_text = title_line
-                            
-                            import re
-                            # Check for [ID: ...] pattern
-                            id_match = re.search(r"\[ID: (.*?)\]", title_line)
-                            if id_match:
-                                doc_id = id_match.group(1)
-                                title_text = title_line.replace(f"[ID: {doc_id}]", "").strip()
-                            
-                            # Extract Content
-                            content_text = ""
-                            if "\nContent:" in part:
-                                content_text = part.split("\nContent:", 1)[1].strip()
+                     # Legacy parsing - minimal validation needed as we prefer PreFetch logic
+                     pass
 
-                            source_obj = {"title": title_text, "id": doc_id, "content": content_text}
+            # Fix: Add Pre-Fetched Context items to Sources
+            # Since we now inject context in System Prompt, the tool is often not called.
+            # We must report these "implicit" sources to the UI.
+            # Reuse 'results' from earlier scope (L327) if available
+            if 'results' in locals() and results:
+                from app.schemas.document import Chunk as ChunkSchema
+                for res in results:
+                    meta = res["metadata"]
+                    
+                    # USER REQ: No Facts in Context List
+                    if meta.get("type") == "fact":
+                        continue
+
+                    doc_id = "unknown"
+                    if meta.get("memory_id"): doc_id = meta.get("memory_id")
+                    elif meta.get("document_id"): doc_id = meta.get("document_id")
+                    
+                    title = meta.get("title", "Untitled")
+
+                    # Construct Rich Source Object expected by Frontend
+                    # { "title": str, "id": str, "content": str, "metadata": dict, "chunk": dict }
+                    
+                    chunk_data = None
+                    if res.get("chunk"):
+                        try:
+                            # Use Pydantic Schema to serialize SQL Model
+                            chunk_model = ChunkSchema.model_validate(res["chunk"])
+                            chunk_data = chunk_model.model_dump()
+                        except Exception as e:
+                            # logger.warning(f"Chunk serialization failed: {e}")
+                            pass
                             
-                            # Add if unique by ID (or title if no ID)
-                            exists = False
-                            for s in sources:
-                                if doc_id and s.get("id") == doc_id:
-                                    exists = True
-                                    break
-                                if not doc_id and s.get("title") == title_text:
-                                    exists = True
-                                    break
-                            
-                            if not exists:
-                                sources.append(source_obj)
+                    source_obj = {
+                        "title": title,
+                        "id": str(doc_id),
+                        "content": res["text"],
+                        "metadata": meta,
+                        "chunk": chunk_data
+                    }
+
+                    # Dedupe (ID or Title)
+                    exists = False
+                    for s in sources:
+                        # Match by ID if valid
+                        if doc_id != "unknown" and s.get("id") == str(doc_id):
+                            exists = True
+                            break
+                        # Match by Title if same (and ID might be unknown or match)
+                        if s.get("title") == title:
+                            exists = True
+                            break
+                    
+                    if not exists:
+                        sources.append(source_obj)
 
             # Save AI Response and get ID
-            ai_message_id = await chat_history.add_message(AIMessage(content=output))
+            ai_message_id = await chat_history.add_message(AIMessage(content=output), sources=sources)
+            
+            # ---------------------------------------------------------
+            # DEFERRED FACT EXTRACTION: Dispatch to Celery worker
+            # This runs in the background AFTER the response is ready
+            # ---------------------------------------------------------
+            try:
+                from app.worker import extract_chat_facts_task
+                extract_chat_facts_task.delay(message, user_id)
+                logger.info(f"Dispatched fact extraction task for user {user_id}")
+            except Exception as e:
+                # Non-critical: log and continue
+                logger.warning(f"Failed to dispatch fact extraction task: {e}")
+            # ---------------------------------------------------------
             
             return {
                 "output": output,

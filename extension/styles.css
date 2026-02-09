@@ -1,19 +1,45 @@
+/* Dark mode (default) */
 :root {
-  --bg: #FFFFFF;
-  --text: #111827;
-  --text-subtle: #6B7280;
-  --primary: #000000;
-  --primary-hover: #374151;
-  --border: #E5E7EB;
-  --input-bg: #FFFFFF;
-  --tab-bg: #F3F4F6;
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --bg: #1a1a1a;
+  --bg-secondary: #2a2a2a;
+  --text: #e5e5e5;
+  --text-subtle: #9ca3af;
+  --text-muted: #6b7280;
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --border: #3d3d3d;
+  --input-bg: #252525;
+  --tab-bg: #252525;
+  --card-bg: #2a2a2a;
+  --success: #10b981;
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Light mode - follows browser/system preference */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f5f5f5;
+    --text: #1a1a1a;
+    --text-subtle: #6b7280;
+    --text-muted: #9ca3af;
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+    --border: #e5e7eb;
+    --input-bg: #ffffff;
+    --tab-bg: #f3f4f6;
+    --card-bg: #ffffff;
+    --success: #10b981;
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  }
 }
 
 body {
-  width: 350px;
+  width: 100%;
+  min-width: 300px;
+  max-width: 400px;
   margin: 0;
-  padding: 24px;
+  padding: 20px;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg);
   color: var(--text);
@@ -24,27 +50,27 @@ body {
 
 /* --- Tabs (Segmented Control) --- */
 .tabs-container {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .tabs-segmented {
   background: var(--tab-bg);
-  padding: 4px;
-  border-radius: 8px;
+  padding: 5px;
+  border-radius: 10px;
   display: flex;
-  gap: 4px;
+  gap: 6px;
 }
 
 .tab-segment {
   flex: 1;
   border: none;
   background: transparent;
-  padding: 8px 0;
-  font-size: 13px;
+  padding: 10px 8px;
+  font-size: 12px;
   color: var(--text-subtle);
   font-weight: 500;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 8px;
   transition: all 0.2s;
 }
 
@@ -59,17 +85,74 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
+/* --- App Header --- */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 0 4px;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.login-logo-img {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 16px;
+}
+
+.header-logo-img {
+  width: 24px;
+  height: 24px;
+}
+
+.icon-btn-header {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-subtle);
+  font-size: 16px;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn-header:hover {
+  background: var(--bg-secondary);
+  color: var(--text);
+}
+
 /* --- Forms & Inputs --- */
 .input-group {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .input-label {
-  display: block;
-  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text);
   margin-bottom: 8px;
+}
+
+.input-label i {
+  font-size: 12px;
+  color: var(--text-subtle);
+  width: 14px;
+  text-align: center;
 }
 
 input,
@@ -97,20 +180,21 @@ textarea:focus {
 /* --- Result Items --- */
 .result-item {
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: 10px;
+  padding: 14px;
   margin-bottom: 12px;
-  background: white;
-  transition: border-color 0.2s;
+  background: var(--card-bg);
+  transition: all 0.2s;
 }
 
 .result-item:hover {
   border-color: var(--primary);
+  transform: translateY(-1px);
 }
 
 .result-title {
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   font-size: 14px;
 }
 
@@ -140,9 +224,23 @@ textarea {
   line-height: 1.4;
 }
 
+.login-icon {
+  font-size: 48px;
+  color: var(--primary);
+  margin-bottom: 16px;
+}
+
+.small-label {
+  font-size: 12px !important;
+}
+
+.small-label i {
+  font-size: 11px !important;
+}
+
 /* --- Status & Footer --- */
 .status-line {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   font-size: 14px;
   color: var(--text-subtle);
 }
@@ -163,30 +261,42 @@ textarea {
 /* --- Buttons --- */
 button.primary-btn {
   width: 100%;
-  padding: 12px;
+  padding: 14px;
   background: var(--primary);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
 
 button.primary-btn:hover {
   background: var(--primary-hover);
+  transform: translateY(-1px);
 }
 
 button.secondary-btn {
-  background: white;
+  background: var(--bg-secondary);
   border: 1px solid var(--border);
-  color: var(--text-subtle);
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 12px;
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
   cursor: pointer;
   margin-top: 8px;
+  transition: all 0.2s ease;
+}
+
+button.secondary-btn:hover {
+  background: var(--border);
+}
+
+button.secondary-btn.copied {
+  background: var(--success);
+  border-color: var(--success);
+  color: white;
 }
 
 button.text-link-btn {
@@ -232,6 +342,92 @@ button.text-link-btn:hover {
 
 .icon-btn-search:hover {
   color: var(--primary);
+}
+
+.icon-btn-search i {
+  font-size: 14px;
+}
+
+/* --- Select Input --- */
+.select-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--input-bg);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.select-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.select-input.small {
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+/* --- Filter Row --- */
+.filter-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+
+.filter-group {
+  flex: 1;
+}
+
+/* --- Spin Animation --- */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* --- Section Headers --- */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.icon-btn-refresh {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  color: var(--text-subtle);
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.icon-btn-refresh:hover {
+  color: var(--primary);
+  border-color: var(--primary);
 }
 
 /* --- Results & Views --- */
